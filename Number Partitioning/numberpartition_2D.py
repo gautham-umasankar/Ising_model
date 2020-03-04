@@ -12,7 +12,7 @@ class Ising():
 	
 	def __init__(self,N,amp):
 		self.N=N
-		self.lattice = 2*np.random.randint(1,size=(N,N))-1 #Spins
+		self.lattice = 2*np.random.randint(2,size=(N,N))-1 #Spins
 		self.lattice.resize(N,N)
 		self.amp=amp	#Problem Instance values
 		self.E0=0		#Initial Energy
