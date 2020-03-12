@@ -8,7 +8,7 @@ import time
 
 niter=20    # Number of times we average over
 N=100        # Problem Size
-temp=5     # Temperature
+temp=10    # Temperature
 nmoves=3000   # Number of MC moves to equilibriate
 nmax=10   # Max number allowed
 
@@ -72,9 +72,10 @@ class Ising():
 
         cutf=0
         i=0
-        while(abs(self.cut-cutf)!=0): #Stop running when energy doesn't change. Other bounds can be used
+        while(abs(cutf-self.cut)!=0): #Stop running when energy doesn't change. Other bounds can be used
             cutf=self.cut
             self.mcmove(1.0/temp)
+            temp=temp-0.05           ##attempt at annealing
             i+=1
         print(i)
 
@@ -102,12 +103,27 @@ for line in data.split("\n")[1:-1]:
     l[y,x]=w
 
 rm=Ising(n,l)
+
+t=0
+cutn=0
+
+for i in range(niter): #We do repeated iterations of the same instance and average over it
+    ti=time.time()
+    rm=Ising(n,l)
+    rm.simulate(temp,nmoves)
+    tf=time.time()
+    t=t+tf-ti
+    cutn=cutn+rm.cut
+t=t/niter
+cutn=cutn/niter
+print(t)
+print(cutn)
 #print("Initial graph=\n",rm.amp)
 """rm.simulate(temp,nmoves)
 print(rm.amp)
 print("Final cut=",rm.cut)"""
 
-fptr=open("different_temp.txt",'w')
+"""fptr=open("different_temp.txt",'w')
 tim=list()
 ct=list()
 
@@ -132,4 +148,4 @@ for temp in np.arange(0.1,20.2,0.2):
 plt.plot(ct)
 plt.plot(tim)
 plt.show()
-fptr.close()
+fptr.close()"""
