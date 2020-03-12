@@ -7,10 +7,10 @@ import time
 
 
 niter=50    # Number of times we average over
-N=100         # Problem Size
+N=100        # Problem Size
 temp=30     # Temperature
 nmoves=50   # Number of MC moves to equilibriate
-nmax=1000   # Max number allowed
+nmax=10   # Max number allowed
 
 class Ising():
 
@@ -30,7 +30,6 @@ class Ising():
         #Calculates Initial Energy
         print(self.amp)
         ii=np.where(self.amp<0)
-        print(ii)
         self.cut=sum(self.amp[ii])/2
         print("Initial cut=",self.cut)
         
@@ -68,15 +67,13 @@ class Ising():
 
     def simulate(self,temp,nmoves):   
         '''Runs nmoves no. of iterations at temp'''
-        for i in range(nmoves):
-            self.mcmove(1.0/temp)
-
-        """Ef=0        
-        while(abs(self.E-Ef)!=0): #Stop running when energy doesn't change. Other bounds can be used
-            if self.E==0:
-                break
-            Ef=self.E
+        """for i in range(nmoves):
             self.mcmove(1.0/temp)"""
+
+        cutf=0        
+        while(abs(self.cut-cutf)!=0): #Stop running when energy doesn't change. Other bounds can be used
+            cutf=self.cut
+            self.mcmove(1.0/temp)
 
 l=np.random.randint(nmax,size=(N,N)) #Problem Instance
 l=l+l.T
@@ -94,8 +91,11 @@ print("Final cut=",rm.cut)
 
 for N in range(50,55):
     l=np.random.randint(nmax,size=(N,N)) #Problem Instance
+    l=l+l.T
+
+    for i in range(N):l[i,i]=0;
     t=0     #Time taken
-    En=0    #Final Energy 
+    cutn=0    #Final Energy 
     ti=0    #Dummy variables for time measurement
     tf=0
     for i in range(niter): #We do repeated iterations of the same instance and average over it
@@ -105,10 +105,8 @@ for N in range(50,55):
         rm.simulate(temp,nmoves)
         tf=time.time()
         t=t+tf-ti
-        En=En+rm.E
+        cutn=cutn+rm.cut
     t=t/niter
-    En=En/niter    
-    fptr.write("{} {} {}\n".format(N,En,t))
-
-
+    cutn=cutn/niter    
+    fptr.write("{} {} {}\n".format(N,cutn,t))
 fptr.close()"""
