@@ -8,8 +8,8 @@ import time
 
 niter=50    # Number of times we average over
 N=100        # Problem Size
-temp=30     # Temperature
-nmoves=50   # Number of MC moves to equilibriate
+temp=1     # Temperature
+nmoves=1000   # Number of MC moves to equilibriate
 nmax=10   # Max number allowed
 
 class Ising():
@@ -75,12 +75,30 @@ class Ising():
             cutf=self.cut
             self.mcmove(1.0/temp)
 
-l=np.random.randint(nmax,size=(N,N)) #Problem Instance
+"""l=np.random.randint(nmax,size=(N,N)) #Random Problem Instance
 l=l+l.T
+for i in range(N):l[i,i]=0;"""
 
-for i in range(N):l[i,i]=0;
+data=''                                 #reading from a file
+with open("input3.txt") as file:
+    data=file.read()
+l1=data.split("\n")[0]
+n,m=l1.split()
+n=int(n);m=int(m)
 
-rm=Ising(N,l)
+l=np.zeros(shape=(n,n))
+
+for line in data.split("\n")[1:-1]:
+    print(line)
+    line=line.strip()
+    x,y,w=line.split()
+    x=int(x)-1
+    y=int(y)-1
+    w=int(w)
+    l[x,y]=w
+    l[y,x]=w
+
+rm=Ising(n,l)
 #print("Initial graph=\n",rm.amp)
 rm.simulate(temp,nmoves)
 print(rm.amp)
