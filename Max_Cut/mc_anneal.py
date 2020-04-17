@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-niter=20    # Number of times we average over
+niter=50    # Number of times we average over
 N=100        # Problem Size
 temp=10    # Temperature
 nmoves=3000   # Number of MC moves to equilibriate
@@ -75,7 +75,7 @@ class Ising():
         while(abs(cutf-self.cut)!=0): #Stop running when energy doesn't change. Other bounds can be used
             cutf=self.cut
             self.mcmove(1.0/temp)
-            temp=temp-0.05           ##attempt at annealing
+            if(temp>0.1):temp=temp-0.001           ##attempt at annealing
             i+=1
         print(i)
 
