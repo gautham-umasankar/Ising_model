@@ -1,2 +1,2 @@
 # Ising_model
-Python implementation of Metropolis Monte Carlo Methods to find the ground states of Ising Hamiltonians. There are codes to solve the Number Partioning Problem (NP-complete)
+Python implementation of Metropolis Monte Carlo Methods to find the ground states of Ising Hamiltonians. Contains heuristics to solve the Number Partioning Problem (NP-complete) and the Max-cut problem for graphs with non-negatively weighted edges. An implementation on GPUs is also being developed. Future implementations of Coherent Ising Machines on Optical setups and related codes for controlling the hardware will be uploaded here. 
