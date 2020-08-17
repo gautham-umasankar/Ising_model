@@ -50,16 +50,11 @@ int main (int argc, char **argv)
         rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
         state = RP_TRIG_STATE_TRIGGERED;
 
-        while(1)
+        do
         {
             rp_AcqGetTriggerState(&state);
             printf("State = %d", state);
-            if(state == RP_TRIG_STATE_TRIGGERED)
-            {
-                // sleep(1);
-                break;
-            }
-        }
+        }while(state != RP_TRIG_STATE_TRIGGERED);
 
         // Get data into buff
         rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff);
