@@ -21,13 +21,15 @@ int main (int argc, char **argv)
     // Initialise variables
 
     // x_k is the "current" value of the photovoltage
-    double x_k = 0.0;
+    float x_k = 0.0;
 
     // x_n an array that will store the output
-    double *x_n = (double *)malloc(buff_size * sizeof(double));
+    float *x_n = (float *)malloc(buff_size * sizeof(float));
 
     // buff stores the input
     float *buff = (float *)malloc(buff_size * sizeof(float));
+
+    float next;
 
     int i;
     rp_acq_trig_state_t state;
@@ -53,7 +55,7 @@ int main (int argc, char **argv)
         do
         {
             rp_AcqGetTriggerState(&state);
-            printf("State = %d", state);
+            printf("State = %d\n", state);
         }while(state != RP_TRIG_STATE_TRIGGERED);
 
         // Get data into buff
@@ -70,7 +72,7 @@ int main (int argc, char **argv)
         printf("x_k = %f", x_k);
 
         // Calculate the next value according to the equation
-        next = pow(cos(x_k - (0.25*M_PI),2) - 0.5;
+        next = pow(cos(x_k - (0.25*M_PI)),2) - 0.5;
 
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
