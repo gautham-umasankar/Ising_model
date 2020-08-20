@@ -9,6 +9,8 @@
 
 int main (int argc, char **argv) 
 {
+    FILE *fp;
+    fp = fopen("./out_data/x_n.txt", "w+");
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
@@ -81,22 +83,32 @@ int main (int argc, char **argv)
             x_n[i] = next;
 	    //printf("x_n: %f \n",x_n[i]);
         }
-	printf("next: %f \n",next);
+
+        // Print the value calculated.
+        printf("next: %f \n", next);
+        fprintf(fp, "%f\n", next);
+
         // Send the output
         rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
-        rp_GenAmp(RP_CH_2, 0.7);
-        rp_GenFreq(RP_CH_2, 100);
+        rp_GenAmp(RP_CH_2, 1);
+
+        // Enable burst mode
+        rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
+        // One waveform per burst
+        rp_GenBurstCount(RP_CH_2, 1);
+        // Number of bursts
+        rp_GenBurstRepetitions(RP_CH_2, -1);
+        // Burst period. Will be dependent on computation time
+        rp_GenBurstPeriod(RP_CH_2, 5000);
+        // rp_GenTrigger(RP_CH_2);
         rp_GenOutEnable(RP_CH_2);
-	//while(1)
-	//{
-	//    printf("Inside the second while loop \n");
-	//}
     }
 
     // Releasing resources
     free(x_n);
     free(buff);
     rp_Release();
+    fclose(fp);
 
     return EXIT_SUCCESS;
 }
