@@ -10,7 +10,7 @@
 int main (int argc, char **argv) 
 {
     FILE *fp;
-    fp = fopen("./out_data/x_n.txt", "w+");
+    fp = fopen("./out_data/x_n.csv", "w+");
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
