@@ -64,12 +64,12 @@ int main (int argc, char **argv)
         // Average over the buffer size
         for(i = 0; i < buff_size; i++)
         {
-            printf("%f\n", buff[i]);
+            //printf("%f\n", buff[i]);
             x_k += buff[i];
         }
         x_k /= buff_size;
 
-        printf("x_k = %f", x_k);
+        printf("x_k = %f \n", x_k);
 
         // Calculate the next value according to the equation
         next = pow(cos(x_k - (0.25*M_PI)),2) - 0.5;
@@ -79,13 +79,18 @@ int main (int argc, char **argv)
         for(i = 0;i < buff_size; i++)
         {
             x_n[i] = next;
+	    //printf("x_n: %f \n",x_n[i]);
         }
-
+	printf("next: %f \n",next);
         // Send the output
-        rp_GenArbWaveform(RP_CH_1, x_n, buff_size);
-        // rp_GenAmp(RP_CH_1, 0.7);
-        // rp_GenFreq(RP_CH_1, 4000.0);
-        rp_GenOutEnable(RP_CH_1);
+        rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+        rp_GenAmp(RP_CH_2, 0.7);
+        rp_GenFreq(RP_CH_2, 100);
+        rp_GenOutEnable(RP_CH_2);
+	//while(1)
+	//{
+	//    printf("Inside the second while loop \n");
+	//}
     }
 
     // Releasing resources
