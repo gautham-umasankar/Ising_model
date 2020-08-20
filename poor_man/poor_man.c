@@ -36,6 +36,18 @@ int main (int argc, char **argv)
     int i;
     rp_acq_trig_state_t state;
 
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
+    rp_GenAmp(RP_CH_2, 1);
+
+    // Enable burst mode
+    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
+    // One waveform per burst
+    rp_GenBurstCount(RP_CH_2, 1);
+    // Number of bursts
+    rp_GenBurstRepetitions(RP_CH_2, -1);
+    // Burst period. Will be dependent on computation time
+    rp_GenBurstPeriod(RP_CH_2, 5000);
+
     rp_AcqReset();
     rp_AcqSetDecimation(1);
     rp_AcqSetTriggerDelay(0);
@@ -90,16 +102,7 @@ int main (int argc, char **argv)
 
         // Send the output
         rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
-        rp_GenAmp(RP_CH_2, 1);
 
-        // Enable burst mode
-        rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
-        // One waveform per burst
-        rp_GenBurstCount(RP_CH_2, 1);
-        // Number of bursts
-        rp_GenBurstRepetitions(RP_CH_2, -1);
-        // Burst period. Will be dependent on computation time
-        rp_GenBurstPeriod(RP_CH_2, 5000);
         // rp_GenTrigger(RP_CH_2);
         rp_GenOutEnable(RP_CH_2);
     }
