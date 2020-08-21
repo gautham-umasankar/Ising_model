@@ -2,10 +2,33 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
+#define N_iters 100
+
+void gen_noise(float *noise)
+{
+	int i = 0;
+	srand(time(0));
+	float mu = 0.0, sig = 0.0;
+	for(;i<N_iters;i++)
+	{
+		noise[i] = rand()%256;
+		mu += noise[i];
+		sig += noise[i]*noise[i];
+	}
+	mu /= N_iters;
+	sig /= N_iters;
+	sig -= mu*mu;
+	sig = sqrt(sig);
+	for(i=0;i<N_iters;i++)
+	{
+		noise[i] = (noise[i] - mu)/sig;
+	}
+}
 
 int main (int argc, char **argv) 
 {
@@ -31,9 +54,17 @@ int main (int argc, char **argv)
     // buff stores the input
     float *buff = (float *)malloc(buff_size * sizeof(float));
 
+    float *noise = (float *)malloc(N_iters * sizeof(float));
+    gen_noise(noise);
+     	
     float next;
 
     int i;
+    for(i=0;i<N_iters;i++)
+    {
+	printf("Noise %d %f\n",i,noise[i]);
+    }
+   
     rp_acq_trig_state_t state;
 
     rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
@@ -65,11 +96,15 @@ int main (int argc, char **argv)
     {
         rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
         state = RP_TRIG_STATE_TRIGGERED;
+	int f = 0;
 
         do
         {
             rp_AcqGetTriggerState(&state);
-            printf("State = %d\n", state);
+            printf("State = %d\n", state); 
+            f++;
+	    if(f > 20)
+		exit(0);
         }while(state != RP_TRIG_STATE_TRIGGERED);
 
         // Get data into buff
@@ -86,7 +121,7 @@ int main (int argc, char **argv)
         printf("x_k = %f \n", x_k);
 
         // Calculate the next value according to the equation
-        next = pow(cos(x_k - (0.25*M_PI)),2) - 0.5;
+        next = pow(cos(x_k - (0.25*M_PI)) + noise[i%N_iters],2) - 0.5;
 
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
