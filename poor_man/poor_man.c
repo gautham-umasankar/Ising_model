@@ -121,7 +121,7 @@ int main (int argc, char **argv)
         printf("x_k = %f \n", x_k);
 
         // Calculate the next value according to the equation
-        next = pow(cos(x_k - (0.25*M_PI)) + noise[i%N_iters],2) - 0.5;
+        next = pow(cos(1.1*x_k - (0.25*M_PI) + noise[i%N_iters]),2) - 0.5;
 
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
