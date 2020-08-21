@@ -7,8 +7,8 @@
 
 #define M_PI 3.14159265358979323846
 #define N 10 //Number of spins
-#define N_iter 1 //Number of iterations
-#define buff_size 20 //Number of samples per spin
+#define N_iter 50 //Number of iterations
+uint32_t buff_size = 20; //Number of samples per spin
 
 void *acquisition_handler(void *);
 
@@ -16,6 +16,7 @@ void *acquisition_handler(void *);
 
 void *acquisition_handler(void *inp_ptr)
 {
+	rp_acq_trig_state_t state;
 	int j,k;
 	float x_k;
     	// buffer array
@@ -58,16 +59,18 @@ void *acquisition_handler(void *inp_ptr)
 		//Taking the last value in the 20 samples
 		x_k = buff[19];
 	
-        	printf("x_k = %f \n", x_k);
+        	//printf("x_k = %f \n", x_k);
 	
 		//Store it in the input array
 		data[j] = x_k;
 	}
+	free(buff);
 }
 
-void ouput_gen(float *x_out)
+void output_gen(float *x_out)
 {
 	int j,k;
+	float *buff = (float *)malloc(buff_size * sizeof(float));
 	//Put the output spin by spin
 	for(j=0;j<N;j++)
 	{
@@ -85,6 +88,7 @@ void ouput_gen(float *x_out)
         	// rp_GenTrigger(RP_CH_2);
 	        rp_GenOutEnable(RP_CH_2);
 	}
+	free(buff);
 }
 
 int main (int argc, char **argv) 
@@ -135,7 +139,7 @@ int main (int argc, char **argv)
 		{
 			if(i==j)
 			{
-				*(J + i*N + j) = 1 ;
+				*(J + i*N + j) = 0 ;
 			}
 			else
 			{
@@ -188,13 +192,17 @@ int main (int argc, char **argv)
     	{
 		sleep(1);
 		//Wait for 1 second before each iteration
-		printf("Iteration number: %d",i);
+		printf("Iteration number: %d\n",i);
 	
 		//Start the acquisition thread
-		pthread_create(&acquisition_thread, NULL, acquistion_handler, (void *) x_in)
+		pthread_create(&acquisition_thread, NULL, acquisition_handler, (void *) x_in);
 	
 		//Simulataneously start putting out the feedback
 		output_gen(x_out);
+		
+		//Make sure the acquisition thread is complete
+		pthread_join(acquisition_thread, NULL);
+		
 
         	// Calculating the Feedback array
 		for(j=0;j<N;j++)
@@ -212,6 +220,10 @@ int main (int argc, char **argv)
 			x_out[j] = pow(cos(f[j] - (0.25*M_PI)),2) - 0.5;
 		}
 	
+		for(j=0;j<N;j++)
+		{
+			printf("x_in_%d [%d] = %f x_out_%d [%d] = %f\n",i,j,x_in[j],i+1,j,x_out[j]);
+		}
     	}	
 
    	// Releasing resources
