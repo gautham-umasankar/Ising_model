@@ -7,7 +7,7 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_iters 1000
+#define N_iters 10
 
 void gen_noise(float *noise)
 {
@@ -33,7 +33,7 @@ void gen_noise(float *noise)
 int main (int argc, char **argv) 
 {
     FILE *fp;
-    fp = fopen("./out_data/x_n.csv", "w+");
+    fp = fopen("./out_data/bifurcation.csv", "w+");
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
@@ -91,58 +91,65 @@ int main (int argc, char **argv)
     // value taking in to account buffer length and smaling rate
 
     sleep(1);
-
-    while(abs(next - old_next)>0.001)
+    
+    int j=0;
+    for(;j<N_iters;j++)
     {
-        old_next = next;
-        rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
-        state = RP_TRIG_STATE_TRIGGERED;
-	    int f = 0;
-
-        do
+        while(abs(next - old_next)>0.001)
         {
-            rp_AcqGetTriggerState(&state);
-            printf("State = %d\n", state); 
-            f++;
-	        if(f > 20)
+            old_next = next;
+            rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
+            state = RP_TRIG_STATE_TRIGGERED;
+            int f = 0;
+
+            do
             {
-		        exit(0);
+                rp_AcqGetTriggerState(&state);
+                printf("State = %d\n", state); 
+                f++;
+                if(f > 20)
+                {
+                    exit(0);
+                }
+            }while(state != RP_TRIG_STATE_TRIGGERED);
+
+            // Get data into buff
+            rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff);
+
+            // Average over the buffer size
+            for(i = 0; i < buff_size; i++)
+            {
+                //printf("%f\n", buff[i]);
+                x_k += buff[i];
             }
-        }while(state != RP_TRIG_STATE_TRIGGERED);
+            x_k /= buff_size;
 
-        // Get data into buff
-        rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff);
+            printf("x_k = %f \n", x_k);
 
-        // Average over the buffer size
-        for(i = 0; i < buff_size; i++)
-        {
-            //printf("%f\n", buff[i]);
-            x_k += buff[i];
+            // Calculate the next value according to the equation
+            next = pow(cos(1.1*x_k - (0.25*M_PI) + noise[i%N_iters]),2) - 0.5;
+
+            // Store the value in the buffer to be given as output for the next
+            // buff_size cycles
+            for(i = 0;i < buff_size; i++)
+            {
+                x_n[i] = next;
+            }
+
+            // Print the value calculated.
+            printf("next: %f \n", next);
+
+            // Send the output
+            rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+
+            // rp_GenTrigger(RP_CH_2);
+            rp_GenOutEnable(RP_CH_2);
         }
-        x_k /= buff_size;
-
-        printf("x_k = %f \n", x_k);
-
-        // Calculate the next value according to the equation
-        next = pow(cos(1.1*x_k - (0.25*M_PI) + noise[i%N_iters]),2) - 0.5;
-
-        // Store the value in the buffer to be given as output for the next
-        // buff_size cycles
+        fprintf(fp, "%f\n", next);
         for(i = 0;i < buff_size; i++)
         {
-            x_n[i] = next;
-	    //printf("x_n: %f \n",x_n[i]);
+            x_n[i] = 0.0;
         }
-
-        // Print the value calculated.
-        printf("next: %f \n", next);
-        fprintf(fp, "%f\n", next);
-
-        // Send the output
-        rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
-
-        // rp_GenTrigger(RP_CH_2);
-        rp_GenOutEnable(RP_CH_2);
     }
 
     // Releasing resources
