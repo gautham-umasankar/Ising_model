@@ -49,7 +49,7 @@ void *acquisition_handler(void *dummy)
         do
         {
             rp_AcqGetTriggerState(&state);
-            printf("State = %d\n", state);
+            //printf("State = %d\n", state);
         }while(state != RP_TRIG_STATE_TRIGGERED);
 
         // Get data into buff
@@ -97,7 +97,7 @@ int main (int argc, char **argv)
         // Average over the buffer size
         for(i = 0; i < buff_size; i++)
         {
-            printf("%f\n", buff[i]);
+            //printf("%f\n", buff[i]);
             x_k += buff[i];
         }
         x_k /= buff_size;
@@ -113,16 +113,17 @@ int main (int argc, char **argv)
         {
             x_n[i] = next;
         }
+	printf("next = %f\n\n", next);
 
         // Send the output
-        rp_GenArbWaveform(RP_CH_1, x_n, buff_size);
-        // rp_GenAmp(RP_CH_1, 0.7);
+        rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+        rp_GenAmp(RP_CH_1, 0.7);
         // rp_GenFreq(RP_CH_1, 4000.0);
 
         // Signal to show that data is ready to be acquired
         ready_to_process = 0;
 
-        rp_GenOutEnable(RP_CH_1);
+        rp_GenOutEnable(RP_CH_2);
     }
 
     // Releasing resources

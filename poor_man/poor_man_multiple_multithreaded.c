@@ -139,12 +139,13 @@ int main (int argc, char **argv)
 		{
 			if(i==j)
 			{
-				*(J + i*N + j) = 0 ;
+				*(J + i*N + j) = 0.0 ;
 			}
-			else
+			else if(abs(i-j) ==  1)
 			{
-				*(J + i*N + j) = 0 ;
+				*(J + i*N + j) = 1.0 ;
 			}	
+			printf("J_%d %d = %f\n",i,j, *(J +i*N + j));
 		} 
      	}
 
@@ -190,7 +191,7 @@ int main (int argc, char **argv)
     	for(i = 0;i<N_iter;i++)
     	//Loops over N iterations
     	{
-		sleep(1);
+		sleep(0.1);
 		//Wait for 1 second before each iteration
 		printf("Iteration number: %d\n",i);
 	
@@ -212,8 +213,10 @@ int main (int argc, char **argv)
 			{
 				f[j]+= (*(J + j*N +k)) * b * x_in[k];
 			}
+			printf("f %d %f\n", j, f[j]);
 		}
-	
+		
+		exit(0);
 		//Simulating the modulator's action	
 		for(j=0;j<N;j++)
 		{
