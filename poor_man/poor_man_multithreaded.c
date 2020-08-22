@@ -53,7 +53,7 @@ void *acquisition_handler(void *dummy)
         }while(state != RP_TRIG_STATE_TRIGGERED);
 
         // Get data into buff
-        rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff);
+        rp_AcqGetLatestDataV(RP_CH_1, &buff_size, buff);
 
         // Signal to show that data is ready to be processed
         ready_to_process = 1;
@@ -69,12 +69,26 @@ int main (int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
+
+    // Enable burst mode
+    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
+    // One waveform per burst
+    rp_GenBurstCount(RP_CH_2, 1);
+    // Number of bursts
+    rp_GenBurstRepetitions(RP_CH_2, -1);
+    // Burst period. Will be dependent on computation time
+    rp_GenBurstPeriod(RP_CH_2, 5000);
+
+    rp_GenAmp(RP_CH_1, 0.7);
+    // rp_GenFreq(RP_CH_1, 4000.0);
+
         
     // Initialise variables
 
     // x_k is the "current" value of the photovoltage
     float x_k = 0.0;
-    float next;
+    float next = 1.0, old_next = 0.0;
 
     // x_n an array that will store the output
     float *x_n = (float *)malloc(buff_size * sizeof(float));
@@ -89,8 +103,9 @@ int main (int argc, char **argv)
 
     sleep(1);
 
-    while(1)
+    while(fabs(next - old_next)>0.0001)
     {
+        old_next = next;
         while(!ready_to_process)
         {}
 
@@ -113,12 +128,10 @@ int main (int argc, char **argv)
         {
             x_n[i] = next;
         }
-	printf("next = %f\n\n", next);
+	    printf("next = %f\n\n", next);
 
         // Send the output
         rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
-        rp_GenAmp(RP_CH_1, 0.7);
-        // rp_GenFreq(RP_CH_1, 4000.0);
 
         // Signal to show that data is ready to be acquired
         ready_to_process = 0;
@@ -129,6 +142,8 @@ int main (int argc, char **argv)
     // Releasing resources
     free(x_n);
     free(buff);
+    rp_GenOutDisable(RP_CH_2);
+    rp_AcqStop(RP_CH_1);
     rp_Release();
 
     pthread_join(acquisition_thread,NULL);
