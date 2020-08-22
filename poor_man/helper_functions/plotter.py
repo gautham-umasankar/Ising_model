@@ -27,13 +27,14 @@ elif(argc == 2):
         f = open("./../out_data/bifurcation.csv","r")
         data = f.readlines()
         data = list(np.float_(data))
-        print(data)
+        # print(data)
         if(len(data) == 0):
             exit(0)
         counts, bin_edges = np.histogram(data)
         fig = tpl.figure()
         fig.hist(counts, bin_edges, orientation="horizontal", force_ascii=False)
         fig.show()
+
     
     else:
         print("Enter type of plot")
