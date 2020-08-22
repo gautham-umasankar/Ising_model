@@ -23,41 +23,25 @@ volatile float *buff;
 
 void *acquisition_handler(void *dummy)
 {
-    rp_acq_trig_state_t state;
-
-    rp_AcqReset();
-    rp_AcqSetDecimation(1);
-    rp_AcqSetTriggerDelay(0);
-
-    rp_AcqStart();
+    rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
 
     // After acquisition is started some time delay is needed in order to 
     // acquire fresh samples in to buffer
     // Here we have used time delay of one second but you can calculate exact
     // value taking in to account buffer length and sampling rate
-    sleep(1);
 
     state = RP_TRIG_STATE_TRIGGERED;
+    rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
 
-    while(1)
+    do
     {
-        while(ready_to_process)
-        {}
+        rp_AcqGetTriggerState(&state);
+        //printf("State = %d\n", state);
+    }while(state != RP_TRIG_STATE_TRIGGERED);
 
-        rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
-
-        do
-        {
-            rp_AcqGetTriggerState(&state);
-            //printf("State = %d\n", state);
-        }while(state != RP_TRIG_STATE_TRIGGERED);
-
-        // Get data into buff
-        rp_AcqGetLatestDataV(RP_CH_1, &buff_size, buff);
-
-        // Signal to show that data is ready to be processed
-        ready_to_process = 1;
-    }
+    sleep(8192/125000000);
+    // Get data into buff
+    rp_AcqGetLatestDataV(RP_CH_1, &buff_size, buff);
 }
 
 
@@ -68,6 +52,12 @@ int main (int argc, char **argv)
         fprintf(stderr, "Red Pitaya API init failed!\n");
         return EXIT_FAILURE;
     }
+
+    rp_AcqReset();
+    rp_AcqSetDecimation(1);
+    rp_AcqSetTriggerDelay(0);
+
+    rp_AcqStart();
 
     rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
 
@@ -98,16 +88,22 @@ int main (int argc, char **argv)
 
     int i;
 
-    // Start the acquisition thread
-    pthread_create(&acquisition_thread, NULL, acquisition_handler, NULL);
-
     sleep(1);
 
     while(fabs(next - old_next)>0.0001)
     {
         old_next = next;
-        while(!ready_to_process)
-        {}
+
+        // Start the acquisition thread
+        pthread_create(&acquisition_thread, NULL, acquisition_handler, NULL);
+
+        // Send the output
+        rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+
+        rp_GenOutEnable(RP_CH_2);
+
+        // Wait for acquisition to complete
+        pthread_join(acquisition_thread,NULL);
 
         // Average over the buffer size
         for(i = 0; i < buff_size; i++)
@@ -129,14 +125,6 @@ int main (int argc, char **argv)
             x_n[i] = next;
         }
 	    printf("next = %f\n\n", next);
-
-        // Send the output
-        rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
-
-        // Signal to show that data is ready to be acquired
-        ready_to_process = 0;
-
-        rp_GenOutEnable(RP_CH_2);
     }
 
     // Releasing resources
@@ -145,8 +133,6 @@ int main (int argc, char **argv)
     rp_GenOutDisable(RP_CH_2);
     rp_AcqStop(RP_CH_1);
     rp_Release();
-
-    pthread_join(acquisition_thread,NULL);
 
     return EXIT_SUCCESS;
 }
