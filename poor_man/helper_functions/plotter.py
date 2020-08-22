@@ -66,10 +66,6 @@ elif(argc == 3):
         fig = tpl.figure()
         fig.hist(counts, bin_edges, orientation="horizontal", force_ascii=False)
         fig.show()
-
-        fig = tpl.figure()
-        fig.hist(counts, bin_edges, grid=[15, 25], force_ascii=False)
-        fig.show()
     
     else:
         print("Enter type of plot")

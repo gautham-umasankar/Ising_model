@@ -62,7 +62,7 @@ int main (int argc, char **argv)
     int i;
     for(i=0;i<N_iters;i++)
     {
-	printf("Noise %d %f\n",i,noise[i]);
+	    printf("Noise %d %f\n",i,noise[i]);
     }
    
     rp_acq_trig_state_t state;
@@ -96,7 +96,7 @@ int main (int argc, char **argv)
     for(;j<N;j++)
     {
 	float next = 0.0, old_next = 1.0;
-        while(fabs(next - old_next)>0.001)
+        while(fabs(next - old_next)>0.0001)
         {
             old_next = next;
             rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
@@ -163,9 +163,13 @@ int main (int argc, char **argv)
     // Releasing resources
     free(x_n);
     free(buff);
+    rp_GenOutDisable(RP_CH_2);
     rp_AcqStop();
     rp_Release();
     fclose(fp);
+
+    char cmd[] = "python3 ./helper_functions/plotter.py h ./out_data/bifurcation.csv";
+    system(cmd);
 
     return EXIT_SUCCESS;
 }
