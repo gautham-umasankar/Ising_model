@@ -92,7 +92,7 @@ int main (int argc, char **argv)
 
     sleep(1);
 
-    while(abs(next - old_next)>0.001)
+    while(1)
     {
         old_next = next;
         rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);

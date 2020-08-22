@@ -57,8 +57,6 @@ int main (int argc, char **argv)
     float *noise = (float *)malloc(N_iters * sizeof(float));
     gen_noise(noise);
      	
-    float next = 0.0, old_next = 1.0;
-
     int i;
     for(i=0;i<N_iters;i++)
     {
@@ -95,7 +93,8 @@ int main (int argc, char **argv)
     int j=0;
     for(;j<N_iters;j++)
     {
-        while(abs(next - old_next)>0.001)
+	float next = 0.0, old_next = 1.0;
+        while(fabs(next - old_next)>0.001)
         {
             old_next = next;
             rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
@@ -138,7 +137,8 @@ int main (int argc, char **argv)
 
             // Print the value calculated.
             printf("next: %f \n", next);
-
+	    //printf("Old next = %f\n",old_next);
+	    //printf("Diff = %f\n", fabs(old_next-next));
             // Send the output
             rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
 
@@ -146,6 +146,7 @@ int main (int argc, char **argv)
             rp_GenOutEnable(RP_CH_2);
         }
         fprintf(fp, "%f\n", next);
+	printf("____________________________");
         for(i = 0;i < buff_size; i++)
         {
             x_n[i] = 0.0;
