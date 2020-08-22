@@ -7,7 +7,8 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_iters 10
+#define N_iters 1000
+#define N 10
 
 void gen_noise(float *noise)
 {
@@ -50,6 +51,7 @@ int main (int argc, char **argv)
 
     // x_n an array that will store the output
     float *x_n = (float *)malloc(buff_size * sizeof(float));
+    float *zero = (float *)malloc(N_iters * sizeof(float));
 
     // buff stores the input
     float *buff = (float *)malloc(buff_size * sizeof(float));
@@ -91,7 +93,7 @@ int main (int argc, char **argv)
     sleep(1);
     
     int j=0;
-    for(;j<N_iters;j++)
+    for(;j<N;j++)
     {
 	float next = 0.0, old_next = 1.0;
         while(fabs(next - old_next)>0.001)
@@ -113,7 +115,7 @@ int main (int argc, char **argv)
             }while(state != RP_TRIG_STATE_TRIGGERED);
 
             // Get data into buff
-            rp_AcqGetOldestDataV(RP_CH_1, &buff_size, buff);
+            rp_AcqGetLatestDataV(RP_CH_1, &buff_size, buff);
 
             // Average over the buffer size
             for(i = 0; i < buff_size; i++)
@@ -126,7 +128,7 @@ int main (int argc, char **argv)
             printf("x_k = %f \n", x_k);
 
             // Calculate the next value according to the equation
-            next = pow(cos(1.1*x_k - (0.25*M_PI) + noise[i%N_iters]),2) - 0.5;
+            next = pow(cos(1.1*x_k - (0.25*M_PI) + noise[%N_iters]),2) - 0.5;
 
             // Store the value in the buffer to be given as output for the next
             // buff_size cycles
@@ -137,8 +139,8 @@ int main (int argc, char **argv)
 
             // Print the value calculated.
             printf("next: %f \n", next);
-	    //printf("Old next = %f\n",old_next);
-	    //printf("Diff = %f\n", fabs(old_next-next));
+	        // printf("Old next = %f\n",old_next);
+	        // printf("Diff = %f\n", fabs(old_next-next));
             // Send the output
             rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
 
@@ -146,11 +148,16 @@ int main (int argc, char **argv)
             rp_GenOutEnable(RP_CH_2);
         }
         fprintf(fp, "%f\n", next);
-	printf("____________________________");
+	    printf("____________________________");
         for(i = 0;i < buff_size; i++)
         {
             x_n[i] = 0.0;
         }
+        rp_GenOutDisable(RP_CH_2);
+        rp_GenArbWaveform(RP_CH_2, zero, buff_size);
+
+        // rp_GenTrigger(RP_CH_2);
+        rp_GenOutEnable(RP_CH_2);
     }
 
     // Releasing resources
