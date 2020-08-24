@@ -19,10 +19,10 @@ for alpha in Alpha:
     print("Working with Alpha = ", alpha,"...")
     i = 0
     while(i < 100):
-        x_k = x_n
+        x_k = 2*np.around(x_n/2,3)
         noise = np.random.normal(0,0.004,[N,1])
         # put the coupled equation instead
-        x_n = modulator(alpha*x_k + noise)
+        x_n = 2*np.around(modulator(alpha*x_k + noise)/2,3)
         # print("x_n = ",x_n)
         i+=1
 
@@ -30,5 +30,5 @@ for alpha in Alpha:
     print("__________")
     final_x = np.c_[final_x,x_n]
 
-plt.plot(Alpha,final_x[:,1:].T,"r.",markersize=2)
+plt.plot(Alpha,final_x[:,1:].T,"r.",markersize=0.5)
 plt.show()
