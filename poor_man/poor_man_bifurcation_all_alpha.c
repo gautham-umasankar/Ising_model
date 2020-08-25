@@ -12,6 +12,7 @@
 #define alpha_max 2
 
 void gen_noise(float *noise)
+//Generates Gaussian Noise
 {
 	int i = 0;
 	srand(time(0));
@@ -25,6 +26,7 @@ void gen_noise(float *noise)
 	mu /= N_iters;
 	sig /= N_iters;
 	sig -= mu*mu;
+	//Increase the factor multiplying sqrt(sig) to reduce noise
 	sig = sqrt(sig)*20;
 	for(i=0;i<N_iters;i++)
 	{
@@ -67,8 +69,11 @@ int main (int argc, char **argv)
     }
    
     rp_acq_trig_state_t state;
-
+    
+    //Sets the mode to AWG
     rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
+    
+    //Scales the voltage that is generated
     rp_GenAmp(RP_CH_2, 1);
 
     // Enable burst mode
@@ -81,7 +86,7 @@ int main (int argc, char **argv)
     rp_GenBurstPeriod(RP_CH_2, 5000);
 
     rp_AcqReset();
-    rp_AcqSetDecimation(1);
+    rp_AcqSetDecimation(1); 
     rp_AcqSetTriggerDelay(0);
 
     rp_AcqStart();
@@ -89,22 +94,27 @@ int main (int argc, char **argv)
     // After acquisition is started some time delay is needed in order to 
     // acquire fresh samples in to buffer
     // Here we have used time delay of one second but you can calculate exact
-    // value taking in to account buffer length and smaling rate
+    // value taking in to account buffer length and sampling rate
 
     sleep(1);
     
-    float alpha;
-    int j;
-    int count=0;
+    float alpha; 
+    int j; //Run index
+    int count=0; //Iteration index
+
+    fprintf(fp, "#Alpha Run Iteration Value");
+
     for(alpha=-1;alpha<=alpha_max;alpha+=0.01)
+    //Loop for alpha
     {
-        fprintf(fp, "\nAlpha = %f\n", alpha);
         for(j=0;j<N;j++)
-        {
-	    fprintf(fp, "Run number = %d \n",j);
+        //Loop for run number
+	{
+	    
             float next = 0.0, old_next = 1.0;
 	    count = 0;
             while(count<N_iters)
+	    //Loop for iterations
             {
 		count++;
                 old_next = next;
@@ -135,32 +145,23 @@ int main (int argc, char **argv)
                     x_k += buff[i];
                 }
                 x_k /= buff_size;
+
+		//Creating off set alpha*(x_k - offset) 
 		x_k -= 0.4;
-		fprintf(fp,"%d %f \n",count,x_k);
+		fprintf(fp,"%f %d %d %f \n",alpha, j, count,x_k);
 
-                //printf("x_k = %f \n", x_k);
-		
+                //Creating the feedback factor		
 		next = alpha*x_k + noise[count%N_iters];
-                // Calculate the next value according to the equation
-                //next = pow(cos(alpha*x_k - (0.25*M_PI) + noise[%N_iters]),2) - 0.5;
-
+                
                 // Store the value in the buffer to be given as output for the next
                 // buff_size cycles
                 for(i = 0;i < buff_size; i++)
                 {
                     x_n[i] = next;
                 }
-		if(count == N_iters - 2)
-		//Storing the penultimate value
-		{
-			//fprintf(fp, "%f\n", next);
-		}
-                // Print the value calculated.
-                //printf("next: %f \n", next);
-                // printf("Old next = %f\n",old_next);
-                // printf("Diff = %f\n", fabs(old_next-next));
-                // Send the output
+		
                 if(rp_GenArbWaveform(RP_CH_2, x_n, buff_size)!=RP_OK)
+		//Generates the Arbitrary Waveform
 		{
 			printf("Exceeded the maximum possible output, Alpha = %f, next = %f \n",alpha,next);
 			//exit(0);
@@ -169,15 +170,17 @@ int main (int argc, char **argv)
                 // rp_GenTrigger(RP_CH_2);
                 rp_GenOutEnable(RP_CH_2);
             }
-            //fprintf(fp, "%f\n", next);
+            
 	    printf("Alpha = %f Final value: %f \n",alpha,next);		
-	    //printf("____________________________");
+	    
             for(i = 0;i < buff_size; i++)
             {
                 x_n[i] = 0.0;
             }
             rp_GenOutDisable(RP_CH_2);
-            rp_GenArbWaveform(RP_CH_2, zero, buff_size);
+		
+            //Resetting output to zero
+	    rp_GenArbWaveform(RP_CH_2, zero, buff_size);
 
             // rp_GenTrigger(RP_CH_2);
             rp_GenOutEnable(RP_CH_2);
@@ -191,9 +194,6 @@ int main (int argc, char **argv)
     rp_AcqStop();
     rp_Release();
     fclose(fp);
-
-    char cmd[] = "python3 ./helper_functions/plotter.py h ./out_data/bifurcation.csv";
-    // system(cmd);
 
     return EXIT_SUCCESS;
 }
