@@ -7,8 +7,9 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_iters 1000
+#define N_iters 100
 #define N 10
+#define alpha_max 2
 
 void gen_noise(float *noise)
 {
@@ -24,7 +25,7 @@ void gen_noise(float *noise)
 	mu /= N_iters;
 	sig /= N_iters;
 	sig -= mu*mu;
-	sig = sqrt(sig);
+	sig = sqrt(sig)*20;
 	for(i=0;i<N_iters;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -34,7 +35,7 @@ void gen_noise(float *noise)
 int main (int argc, char **argv) 
 {
     FILE *fp;
-    fp = fopen("./out_data/bifurcation.csv", "w+");
+    fp = fopen("./out_data/bifurcation_constant_outside_cosine.csv", "w+");
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
@@ -60,7 +61,7 @@ int main (int argc, char **argv)
     gen_noise(noise);
      	
     int i;
-    for(i=0;i<N_iters;i++)
+    for(i=0;i<N_iters;i+=10)
     {
 	    printf("Noise %d %f\n",i,noise[i]);
     }
@@ -94,15 +95,18 @@ int main (int argc, char **argv)
     
     float alpha;
     int j;
-
-    for(alpha=0.0;alpha<=3.0;alpha+=0.1)
+    int count=0;
+    for(alpha=-1;alpha<=alpha_max;alpha+=0.01)
     {
         fprintf(fp, "\nAlpha = %f\n", alpha);
         for(j=0;j<N;j++)
         {
-        float next = 0.0, old_next = 1.0;
-            while(fabs(next - old_next)>0.0001)
+	    fprintf(fp, "Run number = %d \n",j);
+            float next = 0.0, old_next = 1.0;
+	    count = 0;
+            while(count<N_iters)
             {
+		count++;
                 old_next = next;
                 rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
                 state = RP_TRIG_STATE_TRIGGERED;
@@ -111,11 +115,13 @@ int main (int argc, char **argv)
                 do
                 {
                     rp_AcqGetTriggerState(&state);
-                    printf("\nState = %d\n", state); 
+                    //printf("\nState = %d\n", state); 
                     f++;
                     if(f > 20)
                     {
-                        exit(0);
+			printf("\n Acquisition not Triggered \n");
+			f = 0;
+                        //exit(0);
                     }
                 }while(state != RP_TRIG_STATE_TRIGGERED);
 
@@ -129,11 +135,14 @@ int main (int argc, char **argv)
                     x_k += buff[i];
                 }
                 x_k /= buff_size;
+		x_k -= 0.4;
+		fprintf(fp,"%d %f \n",count,x_k);
 
-                printf("x_k = %f \n", x_k);
-
+                //printf("x_k = %f \n", x_k);
+		
+		next = alpha*x_k + noise[count%N_iters];
                 // Calculate the next value according to the equation
-                next = pow(cos(alpha*x_k - (0.25*M_PI) + noise[%N_iters]),2) - 0.5;
+                //next = pow(cos(alpha*x_k - (0.25*M_PI) + noise[%N_iters]),2) - 0.5;
 
                 // Store the value in the buffer to be given as output for the next
                 // buff_size cycles
@@ -141,19 +150,28 @@ int main (int argc, char **argv)
                 {
                     x_n[i] = next;
                 }
-
+		if(count == N_iters - 2)
+		//Storing the penultimate value
+		{
+			//fprintf(fp, "%f\n", next);
+		}
                 // Print the value calculated.
-                printf("next: %f \n", next);
+                //printf("next: %f \n", next);
                 // printf("Old next = %f\n",old_next);
                 // printf("Diff = %f\n", fabs(old_next-next));
                 // Send the output
-                rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+                if(rp_GenArbWaveform(RP_CH_2, x_n, buff_size)!=RP_OK)
+		{
+			printf("Exceeded the maximum possible output, Alpha = %f, next = %f \n",alpha,next);
+			//exit(0);
+		}
 
                 // rp_GenTrigger(RP_CH_2);
                 rp_GenOutEnable(RP_CH_2);
             }
-            fprintf(fp, "%f\n", next);
-            printf("____________________________");
+            //fprintf(fp, "%f\n", next);
+	    printf("Alpha = %f Final value: %f \n",alpha,next);		
+	    //printf("____________________________");
             for(i = 0;i < buff_size; i++)
             {
                 x_n[i] = 0.0;
