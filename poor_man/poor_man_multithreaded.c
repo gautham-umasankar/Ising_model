@@ -105,6 +105,8 @@ int main (int argc, char **argv)
         // Wait for acquisition to complete
         pthread_join(acquisition_thread,NULL);
 
+        x_k = 0.0;
+
         // Average over the buffer size
         for(i = 0; i < buff_size; i++)
         {

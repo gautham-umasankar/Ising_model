@@ -115,6 +115,8 @@ int main (int argc, char **argv)
         // Get data into buff
         rp_AcqGetLatestDataV(RP_CH_1, &buff_size, buff);
 
+        x_k = 0.0;
+
         // Average over the buffer size
         for(i = 0; i < buff_size; i++)
         {
