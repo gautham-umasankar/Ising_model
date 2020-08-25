@@ -4,12 +4,13 @@ import sys
 
 N = 100
 N_alpha = 100
-N_iters = 100
+N_iters = 48
 max_alpha = 4
 plot_alpha = 0.5
 
 def modulator(x):
-    return pow(np.cos(x - 0.25*np.pi),2) - 1/2
+    # return pow(np.cos(x + 0.25*np.pi),2)
+    return pow(np.cos(x + 0.25*np.pi),2)-0.5
 
 if(len(sys.argv)==2):
     plot_alpha = float(sys.argv[1])
@@ -26,9 +27,10 @@ for alpha in Alpha:
     old_x_k = x_k
     print("Working with Alpha = ", alpha,"...")
     i = 0
-    traj_x = np.zeros([N,1])
+    traj_x =x_n
     while(i < N_iters):
         x_k = 2*np.around(x_n/2,3)
+        # noise = np.random.normal(0,0.0004,[N,1])
         noise = np.random.normal(0,0.04,[N,1])
         # put the coupled equation instead
         x_n = 2*np.around(modulator(alpha*x_k + noise)/2,3)
