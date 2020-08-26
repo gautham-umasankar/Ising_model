@@ -49,7 +49,7 @@ void gen_noise()
 	mu /= N_noise;
 	sig /= N_noise;
 	sig -= mu*mu;
-	sig = sqrt(sig)*4;
+	sig = sqrt(sig)*40;
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -158,7 +158,7 @@ void single_iteration(float alpha, int s,int iteration)
 int main (int argc, char **argv) 
 {
 
-    fp = fopen("data_0_2_8_50_4.csv","w");
+    fp = fopen("data_0_2_8_50_40.csv","w");
     //fprintf(fp,"Writing a test line\n");
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
