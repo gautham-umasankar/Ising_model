@@ -15,8 +15,8 @@ int N_noise = 100;
 int N_spins = 1;
 int buff_size = 16;
 
-float ALPHA_MAX = 2.0; 
-float ALPHA_MIN = 1.0;
+float ALPHA_MAX = 3.0;
+float ALPHA_MIN = 0.5;
 float ALPHA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 1/40;
