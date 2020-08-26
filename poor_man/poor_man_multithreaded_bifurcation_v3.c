@@ -20,6 +20,7 @@ float ALPHA_MIN = 0.5;
 float ALPHA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 1/40;
+float scale = 20;
 
 void *acquisition_handler(void *);
 
@@ -150,6 +151,8 @@ void single_iteration(float alpha, int s,int iteration)
     // Add the offset
     x_k /= buff_size;
     x_k -= (offset);
+    x_k *= scale;
+
     fprintf(fp,"%f %d %d %f\n",alpha,s,iteration,x_k);
 
 }
@@ -195,7 +198,7 @@ int main (int argc, char **argv)
                 case 'i':
                         N_iters =atoi(argv[++a]);
                         break;
-                case 's':
+                case 'v':
                         sig_f = atof(argv[++a]);
                         break;
                 case 'u':
@@ -216,6 +219,9 @@ int main (int argc, char **argv)
                         break;
                 case 'o':
                         offset = atof(argv[++a]);
+                        break;
+                case 's':
+                        scale = atof(argv[++a]);
                         break;
                 case 'n':
                         N_noise = atoi(argv[++a]);
