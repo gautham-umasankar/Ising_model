@@ -9,8 +9,8 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define ALPHA_MAX 2
-#define ALPHA_MIN 0
+#define ALPHA_MAX 100.05
+#define ALPHA_MIN 100
 #define ALPHA_STEP 0.1
 #define N_noise 100
 #define N_spins 1 //Number of runs
@@ -19,7 +19,7 @@
 
 
 
-volatile int N_iters = 100;
+volatile int N_iters = 50;
 
 void *acquisition_handler(void *);
 
@@ -28,11 +28,12 @@ pthread_t acquisition_thread;
 // Buffer size
 //const uint32_t buff_size = 16;
 
-// buff stores the input
-volatile float *buff;
+// x_in stores the input
+volatile float *x_in;
 float *noise;
-volatile float *x_n;
+volatile float *x_out;
 FILE *fp;
+float x_k;
 
 void gen_noise()
 {
@@ -48,7 +49,7 @@ void gen_noise()
 	mu /= N_noise;
 	sig /= N_noise;
 	sig -= mu*mu;
-	sig = sqrt(sig)*40;
+	sig = sqrt(sig)*4;
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -68,14 +69,41 @@ void *acquisition_handler(void *dummy)
     //state != RP_TRIG_STATE_DISABLED this variable doesn't exist
     uint32_t b_size = buff_size;
     // Get data into buff
-    rp_AcqGetLatestDataV(RP_CH_1, &b_size, buff);
+    rp_AcqGetLatestDataV(RP_CH_1, &b_size, x_in);
 }
 
 void single_iteration(float alpha, int s,int iteration)
 {
     int i;
+    //compute x_out
+
+    int n = rand()%N_noise;
+    // Multiiply by alpha and add noise
+    float next = alpha*x_k+noise[n];
+   
+    //Threshold the output
+    if(next>=1.0)
+	next = 1.0;
+    else if(next<=-1.0)
+	next = -1.0;
+
+    // Calculate the next value according to the equation
+
+    next = pow(cos(x_k + (0.25*M_PI)),2); //Modulator function. Remove in lab
+
+    // x_out an array that will store the output
+    
+    // Store the value in the buffer to be given as output for the next
+    // buff_size cycles
+    for(i = 0;i < buff_size; i++)
+    {
+        x_out[i] = next;
+    }
+    printf("next = %f\n\n", next);
+
+
     // Send the output
-    rp_GenArbWaveform(RP_CH_2, x_n, buff_size);
+    rp_GenArbWaveform(RP_CH_2, x_out, buff_size);
     // Enable burst mode
     rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
     // One waveform per burst
@@ -107,48 +135,23 @@ void single_iteration(float alpha, int s,int iteration)
 
     //Reset the output to zero
     rp_GenAmp(RP_CH_2, 0);
-
-    // Value from photodiode
-    float x_k = 0.0;
     
-    for(i = 0;i<buff_size;i++)
-	printf("x_n[%d] = %f \n",i,x_n[i]);
+    for(i=0;i<buff_size;i++)
+	printf("x_out[%d]= %f \n",i,x_out[i]);
+
+    x_k = 0.0;   
     // Average over the buffer size
     for(i = 0; i < buff_size; i++)
     {
-        printf("buff[%d] = %f\n",i,buff[i]);
-        x_k += buff[i];
+      	printf("x_in[%d] = %f \n",i,x_in[i]);
+   	x_k += x_in[i];
     }
 
     // Add the offset
     x_k /= buff_size;
     x_k -= (offset);
     fprintf(fp,"%f %d %d %f\n",alpha,s,iteration,x_k);
-    
 
-    int n = rand()%N_noise;
-    // Multiiply by alpha and add noise
-    float next = alpha*x_k+noise[n];
-    if(next>=1.0)
-	next = 1.0;
-    else if(next<=-1.0)
-	next = -1.0;
-    // Calculate the next value according to the equation
-
-    next = pow(cos(x_k + (0.25*M_PI)),2);
-
-    
-    
-    // x_n an array that will store the output
-    //float *x_n = (float *)malloc(buff_size * sizeof(float));
-
-    // Store the value in the buffer to be given as output for the next
-    // buff_size cycles
-    for(i = 0;i < buff_size; i++)
-    {
-        x_n[i] = next;
-    }
-    printf("next = %f\n\n", next);
 }
 
 
@@ -157,8 +160,8 @@ int main (int argc, char **argv)
 
     fp = fopen("data.csv","w");
     //fprintf(fp,"Writing a test line\n");
-    x_n = (float *)malloc(buff_size * sizeof(float));
-    buff = (float *)malloc(buff_size * sizeof(float));
+    x_out = (float *)malloc(buff_size * sizeof(float));
+    x_in = (float *)malloc(buff_size * sizeof(float));
     noise = (float *)malloc(N_noise * sizeof(float));
     fprintf(fp,"# Alpha Run/Spin Iteration Value\n");
     // Initialization of API
@@ -170,9 +173,9 @@ int main (int argc, char **argv)
     int i,s;
     float alpha;
     gen_noise();
-    //initialize x_n to zero
+    //initialize x_out to zero
     for(i=0;i<buff_size;i++)
-	x_n[i] = noise[i];
+	x_out[i] = noise[i];
 
     rp_AcqReset();
     rp_AcqSetDecimation(1);
@@ -194,6 +197,7 @@ int main (int argc, char **argv)
         gen_noise();
         for(s = 0;s < N_spins; s++)
         {
+	    x_k = 1.0;
             for(i = 0;i < N_iters;i++)
             {
                 single_iteration(alpha,s,i);
@@ -202,8 +206,8 @@ int main (int argc, char **argv)
     }
 
     // Releasing resources
-    free(x_n);
-    free(buff);
+    free(x_out);
+    free(x_in);
     free(noise);
     rp_GenOutDisable(RP_CH_2);
     rp_Release();
