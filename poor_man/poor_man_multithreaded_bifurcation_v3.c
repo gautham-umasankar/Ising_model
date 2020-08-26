@@ -15,11 +15,11 @@ int N_noise = 100;
 int N_spins = 1;
 int buff_size = 16;
 
-float ALPHA_MAX = 1.2;
+float ALPHA_MAX = 2.0; 
 float ALPHA_MIN = 1.0;
 float ALPHA_STEP = 0.1;
 float offset = 0.5;
-
+float sig_f = 1/40;
 
 void *acquisition_handler(void *);
 
@@ -49,7 +49,7 @@ void gen_noise()
 	mu /= N_noise;
 	sig /= N_noise;
 	sig -= mu*mu;
-	sig = sqrt(sig)/sigf;
+	sig = sqrt(sig)/sig_f;
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -223,24 +223,20 @@ int main (int argc, char **argv)
                 case 'b':
                         buff_size = atoi(argv[++a]);
                         break;
-                default:printf("Invalid option.");
-                        break;
+                default:printf("Invalid option.\n");
+			return 0;
             }
         }
     }
-    // Initialise variables
-    if(argc == 2)
-    {
-        N_iters  = atoi(argv[1]);
-    }
-
+    printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\nN_iters= %d\nN_spins= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,offset,N_iters,N_spins,buff_size);
+   
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
 	// Generate new noise for each alpha
         gen_noise();
         for(s = 0;s < N_spins; s++)
         {
-	    x_k = 1.0;
+	    x_k = 0.0;
             for(i = 0;i < N_iters;i++)
             {
                 single_iteration(alpha,s,i);
