@@ -9,11 +9,11 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define ALPHA_MAX 1.55
-#define ALPHA_MIN 1.5
+#define ALPHA_MAX 2.0
+#define ALPHA_MIN 0.0
 #define ALPHA_STEP 0.1
 #define N_noise 100
-#define N_spins 1 //Number of runs
+#define N_spins 2 //Number of runs
 #define offset 0.5
 #define buff_size 16
 
