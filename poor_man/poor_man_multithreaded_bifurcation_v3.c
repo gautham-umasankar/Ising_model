@@ -18,7 +18,7 @@ int buff_size = 16;
 float ALPHA_MAX = 3.0;
 float ALPHA_MIN = 0.5;
 float ALPHA_STEP = 0.1;
-float offset = 0.5;
+float offset = 0.04;
 float sig_f = 1/40;
 float scale = 20;
 
@@ -235,12 +235,13 @@ int main (int argc, char **argv)
                 case 'f': // File to save data in
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
+			break;
                 default:printf("Invalid option.\n");
 			return 0;
             }
         }
     }
-    printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\n   \
+    //printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\n   \
     N_iters= %d\nN_spins= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,\
     offset,N_iters,N_spins,buff_size);
    
