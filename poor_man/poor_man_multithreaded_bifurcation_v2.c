@@ -9,8 +9,8 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define ALPHA_MAX 100.05
-#define ALPHA_MIN 100
+#define ALPHA_MAX 1.55
+#define ALPHA_MIN 1.5
 #define ALPHA_STEP 0.1
 #define N_noise 100
 #define N_spins 1 //Number of runs
@@ -49,7 +49,7 @@ void gen_noise()
 	mu /= N_noise;
 	sig /= N_noise;
 	sig -= mu*mu;
-	sig = sqrt(sig)*4;
+	sig = sqrt(sig)*40;
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -197,7 +197,7 @@ int main (int argc, char **argv)
         gen_noise();
         for(s = 0;s < N_spins; s++)
         {
-	    x_k = 1.0;
+	    x_k = 0.0;
             for(i = 0;i < N_iters;i++)
             {
                 single_iteration(alpha,s,i);
