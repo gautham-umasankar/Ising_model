@@ -229,6 +229,9 @@ int main (int argc, char **argv)
                 case 'b':
                         buff_size = atoi(argv[++a]);
                         break;
+                case 'f':
+                        fclose(fp);
+                        fp = fopen(argv[++a],"w");
                 default:printf("Invalid option.\n");
 			return 0;
             }
