@@ -13,7 +13,7 @@
 #define ALPHA_MIN 0.0
 #define ALPHA_STEP 0.1
 #define N_noise 100
-#define N_spins 2 //Number of runs
+#define N_spins 8 //Number of runs
 #define offset 0.5
 #define buff_size 16
 
@@ -49,7 +49,7 @@ void gen_noise()
 	mu /= N_noise;
 	sig /= N_noise;
 	sig -= mu*mu;
-	sig = sqrt(sig)*40;
+	sig = sqrt(sig)*4;
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
@@ -158,7 +158,7 @@ void single_iteration(float alpha, int s,int iteration)
 int main (int argc, char **argv) 
 {
 
-    fp = fopen("data.csv","w");
+    fp = fopen("data_0_2_8_50_4.csv","w");
     //fprintf(fp,"Writing a test line\n");
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
