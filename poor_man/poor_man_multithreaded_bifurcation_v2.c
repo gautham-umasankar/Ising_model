@@ -89,7 +89,7 @@ void single_iteration(float alpha, int s,int iteration)
 
     // Calculate the next value according to the equation
 
-    next = pow(cos(x_k + (0.25*M_PI)),2); //Modulator function. Remove in lab
+    next = pow(cos(next + (0.25*M_PI)),2); //Modulator function. Remove in lab
 
     // x_out an array that will store the output
     

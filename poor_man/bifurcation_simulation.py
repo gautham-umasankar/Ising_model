@@ -4,14 +4,15 @@ import sys
 
 N = 100
 N_alpha = 100
-N_iters = 48
+N_iters = 50
 max_alpha = 4
 plot_alpha = 1.1
 offset = 0.5
 sig = 0.04
+V_pi = 1 # change this later
 
 def modulator(x):
-    return pow(np.cos(x + 0.25*np.pi),2)
+    return pow(np.cos(x/V_pi + 0.25*np.pi),2)
 
 if(len(sys.argv)>1):
     i = 1
@@ -31,18 +32,17 @@ if(len(sys.argv)>1):
 
 Alpha = np.linspace(0,max_alpha,N_alpha)
 ii = np.where(plot_alpha<Alpha)[0][0]
-beta = 0.0
+Beta = 0.0
 final_x = np.zeros([N,1])
 pre_final_x = np.zeros([N,1])
 traj_x = np.zeros([N,1])
-noise = np.random.normal(0,sig,[N,N])
 
 for alpha in Alpha:
     x_k = np.zeros([N,1])
-    x_n = np.zeros([N,1])
+    x_in = np.zeros([N,1])
     print("Working with Alpha = ", alpha,"...")
     i = 0
-    traj_x =x_n
+    traj_x =x_in
     noise = np.random.normal(0,sig,[N,N_iters])
     while(i < N_iters):
         # This is the calculated value to be put out to the DAC
@@ -50,10 +50,10 @@ for alpha in Alpha:
         x_out = 2*np.around((alpha*x_k + np.array([noise[:,i]]).T)/2,3)
 
         # The value received from the modulator
-        x_n = 2*np.around(modulator(np.tanh(x_out))/2,3)
+        x_in = 2*np.around(modulator(np.tanh(x_out))/2,3)
 
         # The state value
-        x_k = x_n-offset
+        x_k = x_in-offset
 
         # print("x_k = ",x_k)
         i+=1
@@ -65,7 +65,7 @@ for alpha in Alpha:
         plot1 = plt.figure(1)
         plt.plot(traj_x[1],"rx-")#,markersize=0.5)
 
-    print("x_n = ",x_n)
+    print("x_in = ",x_in)
     print("__________")
     pre_final_x = np.c_[pre_final_x,traj_x[:,-2]]
     final_x = np.c_[final_x,traj_x[:,-1]]
