@@ -22,6 +22,8 @@ float ALPHA_STEP = 0.1;
 float offset = 0.04;
 float sig_f = 1/40;
 float scale = 20;
+float beta = 1.0;
+float J_12 = 1.0;
 
 void *acquisition_handler(void *);
 
@@ -195,7 +197,7 @@ void single_iteration(float alpha, int s,int iteration)
     x_k2 -= (offset);
     x_k2 *= scale;
 
-    fprintf(fp,"%f %d %d %f\n",alpha,s,iteration,x_k);
+    fprintf(fp,"%f %d %d %f %f\n",alpha,s,iteration,x_k1,x_k2);
 
 }
 
@@ -203,12 +205,12 @@ void single_iteration(float alpha, int s,int iteration)
 int main (int argc, char **argv) 
 {
 
-    fp = fopen("data.csv","w");
+    fp = fopen("data_2spins.csv","w");
     //fprintf(fp,"Writing a test line\n");
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
     noise = (float *)malloc(N_noise * sizeof(float));
-    fprintf(fp,"# Alpha Run/Spin Iteration Value\n");
+    fprintf(fp,"#Alpha Run/Spin Iteration Value1 Value2\n");
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
@@ -234,7 +236,7 @@ int main (int argc, char **argv)
     {
         for(int a=1;a<argc;a++)
         {
-            char opt = argv[a][0];
+            char opt = argv[a][1];
             switch(opt)
             {
                 case 'i': // Number of iterations per spin
@@ -256,6 +258,12 @@ int main (int argc, char **argv)
                         ALPHA_MIN = atof(argv[++a]);
                         ALPHA_MAX = ALPHA_MIN;
                         break;  
+                case 'B': // Change value of beta
+                        beta = atof(argv[++a]);
+                        break;
+                case 'J': //Change value of J
+                        J_12 = atof(argv[++a]);
+                        break;
                 case 'N': // Number of spins/runs
                         N_runs = atoi(argv[++a]);
                         break;

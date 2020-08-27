@@ -195,7 +195,7 @@ int main (int argc, char **argv)
     {
         for(int a=1;a<argc;a++)
         {
-            char opt = argv[a][0];
+            char opt = argv[a][1];
             switch(opt)
             {
                 case 'i': // Number of iterations per spin
