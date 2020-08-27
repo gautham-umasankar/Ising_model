@@ -235,9 +235,9 @@ int main (int argc, char **argv)
                 case 'f': // File to save data in
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
-			break;
+			            break;
                 default:printf("Invalid option.\n");
-			return 0;
+			            return 0;
             }
         }
     }
