@@ -38,6 +38,8 @@ float x_k;
 
 void gen_noise()
 {
+    // Generate noise with 0 mean and some deviation. Deviation can be changed
+    // at run time
 	int i = 0;
 	srand(time(0));
 	float mu = 0.0, sig = 0.0;
@@ -67,7 +69,7 @@ void *acquisition_handler(void *dummy)
         rp_AcqGetTriggerState(&state);
         //printf("State = %d\n", state);
     }while(state == RP_TRIG_STATE_TRIGGERED);
-    //state != RP_TRIG_STATE_DISABLED this variable doesn't exist
+
     uint32_t b_size = buff_size;
     // Get data into buff
     rp_AcqGetLatestDataV(RP_CH_1, &b_size, x_in);
@@ -90,7 +92,8 @@ void single_iteration(float alpha, int s,int iteration)
 
     // Calculate the next value according to the equation
 
-    next = pow(cos(next + (0.25*M_PI)),2); //Modulator function. Remove in lab
+    // next = pow(cos(next + (0.25*M_PI)),2); //Modulator function. 
+    // Remove in lab
 
     // x_out an array that will store the output
     
@@ -195,41 +198,41 @@ int main (int argc, char **argv)
             char opt = argv[a][0];
             switch(opt)
             {
-                case 'i':
+                case 'i': // Number of iterations per spin
                         N_iters =atoi(argv[++a]);
                         break;
-                case 'v':
+                case 'v': // Standard deviation of noise
                         sig_f = atof(argv[++a]);
                         break;
-                case 'u':
+                case 'u': // Upper limit of alpha
                         ALPHA_MAX = atof(argv[++a]);
                         break;
-                case 'p':
+                case 'p': // Step size of alpha
                         ALPHA_STEP = atof(argv[++a]);
                         break;
-                case 'd':
+                case 'd': // Lower limit of alpha
                         ALPHA_MIN = atof(argv[++a]);
                         break;
-                case 'a':
+                case 'a': // If we want only one value of alpha
                         ALPHA_MIN = atof(argv[++a]);
                         ALPHA_MAX = ALPHA_MIN;
                         break;  
-                case 'N':
+                case 'N': // Number of spins/runs
                         N_spins = atoi(argv[++a]);
                         break;
-                case 'o':
+                case 'o': // Offset
                         offset = atof(argv[++a]);
                         break;
-                case 's':
+                case 's': // Scaling factor due to the photodiode
                         scale = atof(argv[++a]);
                         break;
-                case 'n':
+                case 'n': // Number of points in noise
                         N_noise = atoi(argv[++a]);
                         break;
-                case 'b':
+                case 'b': // Buffer size of x_in and x_out
                         buff_size = atoi(argv[++a]);
                         break;
-                case 'f':
+                case 'f': // File to save data in
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
                 default:printf("Invalid option.\n");
@@ -237,7 +240,9 @@ int main (int argc, char **argv)
             }
         }
     }
-    printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\nN_iters= %d\nN_spins= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,offset,N_iters,N_spins,buff_size);
+    printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\n   \
+    N_iters= %d\nN_spins= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,\
+    offset,N_iters,N_spins,buff_size);
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
