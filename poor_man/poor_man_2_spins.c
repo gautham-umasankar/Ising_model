@@ -78,27 +78,28 @@ void *acquisition_handler(void *dummy)
 	rp_AcqGetWritePointer(&pos);
         printf("Pos = %d\n", pos);
     }while(state == RP_TRIG_STATE_TRIGGERED);
-
+	
     uint32_t b_size = buff_size;
     // Get data into buff
     rp_AcqGetOldestDataV(RP_CH_1, &b_size, x_in);
+    //rp_AcqStart();
 }
 
 void single_iteration(float alpha, int s,int iteration)
 {
-    int i;
+    int i=0;
     //compute x_out
 
     int n = rand()%N_noise;
     // Multiiply by alpha and add noise
     printf("\nValue of n = %d", n);
     float next1 = alpha*x_k1 + beta*J_12*x_k2 + noise[n];
-    //next1 = 0.4;
+    next1 = 0.4;
 
     n = rand()%N_noise;
     printf("\nValue of n = %d\n", n);
     float next2 = alpha*x_k2 + beta*J_12*x_k1 + noise[n];
-    //next2 = -0.4;
+    next2 = -0.4;
     //Threshold the output
     if(next1 >= 1.0)
     {
@@ -129,7 +130,9 @@ void single_iteration(float alpha, int s,int iteration)
     
     // Store the value in the buffer to be given as output for the next
     // buff_size cycles
-    for(i = 0;i < buff_size/2; i++)
+
+    //x_out[i] = 0.0;
+    for(;i < buff_size/2; i++)
     {
         x_out[i] = next1;
     }
@@ -153,7 +156,7 @@ void single_iteration(float alpha, int s,int iteration)
     // rp_GenBurstPeriod(RP_CH_2, 5000);
 
     rp_GenAmp(RP_CH_2, 1.0);
-    rp_GenFreq(RP_CH_2, 7630.0);
+    rp_GenFreq(RP_CH_2, 7690.0);
 
     rp_AcqReset();
     // Start acquisition
@@ -178,6 +181,7 @@ void single_iteration(float alpha, int s,int iteration)
     rp_AcqStop();
 
     //Reset the output to zero
+    rp_GenOutDisable(RP_CH_2);
     rp_GenAmp(RP_CH_2, 0);
     
     for(i=0;i<buff_size;i+=p_step)
@@ -327,7 +331,6 @@ int main (int argc, char **argv)
     free(x_out);
     free(x_in);
     free(noise);
-    rp_GenOutDisable(RP_CH_2);
     rp_Release();
     fclose(fp);
     return EXIT_SUCCESS;
