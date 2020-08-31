@@ -171,7 +171,6 @@ void single_iteration(float alpha, int s,int iteration)
 
     // Start the acquisition thread
     pthread_create(&acquisition_thread, NULL, acquisition_handler, NULL);
-    rp_GenOutEnable(RP_CH_2);
 
     // Wait for acquisition to complete
     pthread_join(acquisition_thread,NULL);
@@ -202,6 +201,7 @@ void single_iteration(float alpha, int s,int iteration)
     printf("x_k1 = %f\n", x_k1);
     // Add the offset
     x_k1 /= (buff_size/2);
+    x_k1 = x_in[4000];
     printf("x_k1 = %f\n", x_k1);
     x_k1 -= (offset);
     x_k1 *= scale;
@@ -217,6 +217,7 @@ void single_iteration(float alpha, int s,int iteration)
 
     // Add the offset
     x_k2 /= (buff_size/2);
+    x_k2 = x_in[12000];
     x_k2 -= (offset);
     x_k2 *= scale;
 
@@ -249,6 +250,7 @@ int main (int argc, char **argv)
     rp_AcqReset();
     rp_AcqSetDecimation(1);
 
+    rp_GenOutEnable(RP_CH_2);
     // Think we might have to change this
 
         
