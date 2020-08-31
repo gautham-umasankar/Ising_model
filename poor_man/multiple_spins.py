@@ -40,7 +40,7 @@ def modulator(x):
     return pow(np.cos(x/V_pi + 0.25*np.pi),2)
 
 def feedback(x,alpha):
-    np.fill_diagonal(J,alpha)
+    np.fill_diagonal(J,-alpha)
     return J@x
 
 Alpha = np.linspace(-max_alpha,max_alpha,N_alpha)
