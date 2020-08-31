@@ -11,16 +11,19 @@
 #define M_PI 3.14159265358979323846
 #define N_spins 2
 
+int p_step = 1000;
+int trig_delay = 8189+16384+4200;
+
 int N_iters = 50;
 int N_noise = 100;
 int N_runs = 1;
-int buff_size = N_spins*16;
+int buff_size = 16*1024;
 
 float ALPHA_MAX = 3.0;
 float ALPHA_MIN = 0.5;
 float ALPHA_STEP = 0.1;
 float offset = 0.04;
-float sig_f = 1/40;
+float sig_f = 0.025;
 float scale = 20;
 float beta = 1.0;
 float J_12 = 1.0;
@@ -59,42 +62,44 @@ void gen_noise()
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
+		printf("\nNoise %d = %f\n",i ,noise[i]);
 	}
-}
-
-void update_equation()
-{
-
 }
 
 void *acquisition_handler(void *dummy)
 {
     rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
+    int pos;
 
     // Wait for buffer to get full after Trigger.
     do
     {
         rp_AcqGetTriggerState(&state);
-        //printf("State = %d\n", state);
+	rp_AcqGetWritePointer(&pos);
+        printf("Pos = %d\n", pos);
     }while(state == RP_TRIG_STATE_TRIGGERED);
-
+	
     uint32_t b_size = buff_size;
     // Get data into buff
-    rp_AcqGetLatestDataV(RP_CH_1, &b_size, x_in);
+    rp_AcqGetOldestDataV(RP_CH_1, &b_size, x_in);
+    //rp_AcqStart();
 }
 
 void single_iteration(float alpha, int s,int iteration)
 {
-    int i;
+    int i=0;
     //compute x_out
 
     int n = rand()%N_noise;
     // Multiiply by alpha and add noise
+    printf("\nValue of n = %d", n);
     float next1 = alpha*x_k1 + beta*J_12*x_k2 + noise[n];
+    next1 = 0.4;
 
     n = rand()%N_noise;
+    printf("\nValue of n = %d\n", n);
     float next2 = alpha*x_k2 + beta*J_12*x_k1 + noise[n];
-   
+    next2 = -0.4;
     //Threshold the output
     if(next1 >= 1.0)
     {
@@ -116,14 +121,18 @@ void single_iteration(float alpha, int s,int iteration)
 
     // Calculate the next value according to the equation
 
-    // next = pow(cos(next + (0.25*M_PI)),2); //Modulator function. 
     // Remove in lab
+    next1 = pow(cos(next1 + (0.25*M_PI)),2); //Modulator function. 
+
+    next2 = pow(cos(next2 + (0.25*M_PI)),2); //Modulator function. 
 
     // x_out an array that will store the output
     
     // Store the value in the buffer to be given as output for the next
     // buff_size cycles
-    for(i = 0;i < buff_size/2; i++)
+
+    //x_out[i] = 0.0;
+    for(;i < buff_size/2; i++)
     {
         x_out[i] = next1;
     }
@@ -131,29 +140,35 @@ void single_iteration(float alpha, int s,int iteration)
     {
         x_out[i] = next2;
     }
-    printf("next1 = %f\n next2=%f\n", next1, next2);
+    printf("\nnext1 = %f\n next2=%f\n", next1, next2);
 
 
     // Send the output
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size);
     // Enable burst mode
     rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
     // One waveform per burst
     rp_GenBurstCount(RP_CH_2, 1);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, -1);
+    rp_GenBurstRepetitions(RP_CH_2, 1);
     // Burst period. Will be dependent on computation time
     // rp_GenBurstPeriod(RP_CH_2, 5000);
 
-    rp_GenAmp(RP_CH_2, 0.9);
-    // rp_GenFreq(RP_CH_2, 4000.0);
+    rp_GenAmp(RP_CH_2, 1.0);
+    rp_GenFreq(RP_CH_2, 7690.0);
 
     rp_AcqReset();
     // Start acquisition
+    rp_AcqSetTriggerDelay(trig_delay);
     rp_AcqStart();
 
     // Trigger immediately
     rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
+    int pos;
+    rp_AcqGetWritePointerAtTrig(&pos);
+
+    printf("Pos right after trigger now:%d",pos);
 
     // Start the acquisition thread
     pthread_create(&acquisition_thread, NULL, acquisition_handler, NULL);
@@ -166,9 +181,10 @@ void single_iteration(float alpha, int s,int iteration)
     rp_AcqStop();
 
     //Reset the output to zero
+    rp_GenOutDisable(RP_CH_2);
     rp_GenAmp(RP_CH_2, 0);
     
-    for(i=0;i<buff_size;i++)
+    for(i=0;i<buff_size;i+=p_step)
 	printf("x_out[%d]= %f \n",i,x_out[i]);
 
     x_k1 = 0.0;
@@ -177,28 +193,34 @@ void single_iteration(float alpha, int s,int iteration)
     // Average over the buffer size
     for(i = 0; i < buff_size/2; i++)
     {
-      	printf("x_in[%d] = %f \n",i,x_in[i]);
    	    x_k1 += x_in[i];
+	    if(i%p_step ==  0)
+		printf("x_in[%d] = %f \n",i,x_in[i]);
     }
 
+
+    printf("x_k1 = %f\n", x_k1);
     // Add the offset
-    x_k1 /= buff_size;
+    x_k1 /= (buff_size/2);
+    printf("x_k1 = %f\n", x_k1);
     x_k1 -= (offset);
     x_k1 *= scale;
+    printf("x_k1 = %f\n", x_k1);
 
     for(; i < buff_size; i++)
     {
-      	printf("x_in[%d] = %f \n",i,x_in[i]);
-   	    x_k2 += x_in[i];
+   	x_k2 += x_in[i];
+    	if(i%p_step ==  0)
+		printf("x_in[%d] = %f \n",i,x_in[i]);
+
     }
 
     // Add the offset
-    x_k2 /= buff_size;
+    x_k2 /= (buff_size/2);
     x_k2 -= (offset);
     x_k2 *= scale;
 
     fprintf(fp,"%f %d %d %f %f\n",alpha,s,iteration,x_k1,x_k2);
-
 }
 
 
@@ -228,9 +250,7 @@ int main (int argc, char **argv)
     rp_AcqSetDecimation(1);
 
     // Think we might have to change this
-    rp_AcqSetTriggerDelay(8200);
 
-    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
         
     if(argc > 1)
     {
@@ -311,7 +331,6 @@ int main (int argc, char **argv)
     free(x_out);
     free(x_in);
     free(noise);
-    rp_GenOutDisable(RP_CH_2);
     rp_Release();
     fclose(fp);
     return EXIT_SUCCESS;
