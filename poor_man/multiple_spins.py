@@ -84,6 +84,6 @@ for alpha in Alpha:
     final_x = np.c_[final_x,traj_x[:,-1]]
 
 plot2 = plt.figure(2)
-plt.plot(Alpha,final_x[:,1:].T,"r.",markersize=0.5)
+plt.plot(Alpha,final_x[:,1:].T,"r.",markersize=1)
 # # plt.plot(Alpha,pre_final_x[:,1:].T,"r.",markersize=0.5)
 plt.show()
