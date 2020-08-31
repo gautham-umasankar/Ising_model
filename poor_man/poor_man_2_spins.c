@@ -150,11 +150,11 @@ void single_iteration(float alpha, int s,int iteration)
     // One waveform per burst
     rp_GenBurstCount(RP_CH_2, 1);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, 1);
+    rp_GenBurstRepetitions(RP_CH_2, 3);
     // Burst period. Will be dependent on computation time
-    // rp_GenBurstPeriod(RP_CH_2, 5000);
+    //rp_GenBurstPeriod(RP_CH_2, 130000);
 
-    rp_GenAmp(RP_CH_2, 1.0);
+    //rp_GenAmp(RP_CH_2, 1.0);
     rp_GenFreq(RP_CH_2, 7690.0);
 
     rp_AcqReset();
@@ -180,10 +180,10 @@ void single_iteration(float alpha, int s,int iteration)
     rp_AcqStop();
 
     //Reset the output to zero
-    rp_GenOutDisable(RP_CH_2);
-    rp_GenReset();
+    //rp_GenOutDisable(RP_CH_2);
+    //rp_GenReset();
 
-    trig_delay = 4000 + 16384;
+    trig_delay = 5000 + 16384;
     for(i=0;i<buff_size;i+=p_step)
 	printf("x_out[%d]= %f \n",i,x_out[i]);
 
