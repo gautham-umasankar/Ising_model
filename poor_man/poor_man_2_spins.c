@@ -181,6 +181,8 @@ void single_iteration(float alpha, int s,int iteration)
 
     //Reset the output to zero
     rp_GenOutDisable(RP_CH_2);
+    rp_GenReset();
+
     trig_delay = 4000 + 16384;
     for(i=0;i<buff_size;i+=p_step)
 	printf("x_out[%d]= %f \n",i,x_out[i]);
