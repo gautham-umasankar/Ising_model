@@ -68,8 +68,16 @@ if(len(sys.argv)>1):
         sys.argv.pop(i+1)
         i+=1
 
-J = beta*np.ones([N,N])
-np.fill_diagonal(J,0)
+J = np.zeros([N,N])
+for i in range(1,N-1):
+    J[i][i+1] = 1
+    J[i][i-1] = 1
+J[0][1] = 1
+J[0][N-1] = 1
+J[N-1][N-2] = 1
+J[N-1][0] = 1
+J = beta*J
+#print(J)
 if(J_file):
     f = open(J_file,"r")
     J = np.zeros([N,N])
@@ -141,23 +149,28 @@ if(bifurcation):
 
 if(solver):
     #print(traj_x[:,-2],traj_x[:,-1])
-    print("The solution is as follows: \n")
+    #print("The solution is as follows: \n")
     cut = np.sign(final_x[:,-1])
     cut_value = 0
     for row,i in enumerate(cut):
         for col,j in enumerate(cut):
             if(i*j<0):
+                #print(i,j)
+                #print("Row and column",row,col,J[row][col]/beta)
                 cut_value = cut_value + J[row][col]/beta
 
-    print("The nodes on two sides of the cut are: ")
-    print("The negative side:")
-    for node,i in enumerate(cut):
-        if(i<0):
-            print(node+1)
-    print("The positive side:")
-    for node,i in enumerate(cut):
-        if(i>0):
-            print(node+1)
-    print("The cut value is: ",cut_value/2)
-    
+    #print("The nodes on two sides of the cut are: ")
+    #print("The negative side:")
+    # for node,i in enumerate(cut):
+    #     if(i<0):
+    #         #print(node+1)
+    # #print("The positive side:")
+    # for node,i in enumerate(cut):
+    #     if(i>0):
+    #         #print(node+1)
+    # #print(cut)
+    #print("The cut value is: ",cut_value/2)
+    #print("The number of positive nodes is: ",len(np.where(cut>0)[0]))
+    #print("The number of negative nodes is: ",len(np.where(cut<0)[0]))
+    print("{} {} {}".format(min_alpha,beta,cut_value/2))
 plt.show()
