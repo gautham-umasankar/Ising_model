@@ -9,11 +9,11 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 100
+#define N_spins 50 
 #define BUFFER_SIZE 16*1024
 
-int p_step = 1000;
-int trig_delay = 8189+16384+4200;
+int p_step = 100;
+int trig_delay = 16384+4650;
 
 int N_iters = 30;
 int N_noise = 100;
@@ -152,13 +152,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     // Send the output
     rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
-    rp_GenArbWaveform(RP_CH_2, x_out, buff_size);
+    rp_GenArbWaveform(RP_CH_2, x_out, buff_size); //Does it start generating here itself?
     // Enable burst mode
-    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST);
+    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
     // One waveform per burst
     rp_GenBurstCount(RP_CH_2, 1);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, -1);
+    rp_GenBurstRepetitions(RP_CH_2, 3);
     // Burst period. Will be dependent on computation time
     //rp_GenBurstPeriod(RP_CH_2, 130000);
 
@@ -187,6 +187,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         printf("Pos = %d\n", pos);
     }while(state == RP_TRIG_STATE_TRIGGERED);
 	
+    rp_AcqGetWritePointer(&pos);
+    printf("Pos = %d\n",pos);
     // Get data into buff
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
 
@@ -197,7 +199,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //rp_GenOutDisable(RP_CH_2);
     //rp_GenReset();
 
-    trig_delay = 16384 + 5000;
+    //trig_delay = 5000+16384;
 
     for(i=0;i<buff_size;i+=p_step)
     {
@@ -246,7 +248,7 @@ int main (int argc, char **argv)
         J[k] = (float *)malloc(N_spins * sizeof(float));
     }
 
-    read_J();
+    //read_J();
 
     //for(i = 0;i< N_spins;i++)
     //    for(int j = 0;j<N_spins;j++)
