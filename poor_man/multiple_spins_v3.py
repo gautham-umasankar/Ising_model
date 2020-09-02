@@ -62,7 +62,7 @@ if(len(sys.argv)>1):
             beta_step = float(sys.argv[i+1])
         elif(opt == '-b'):
             min_beta = float(sys.argv[i+1])
-            max_beta = beta + 1e-10
+            max_beta = min_beta + 1e-10
             plot_beta = min_beta
 
        #Run parameters
@@ -106,28 +106,37 @@ if(len(sys.argv)>1):
         #sys.argv.pop(i+1)
         i+=1
 
+plot_alpha = (min_alpha + max_alpha)/2
+plot_beta = (min_beta + max_beta)/2
+
 
 
 def modulator(x):
     return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/V_pi),2) #Check this equation later
 
 def feedback(x,alpha,beta,J):
-    J = beta*J
+    
     np.fill_diagonal(J,-alpha)
-    return J@x
+    return (beta*J)@x
 
 def notanh(x):
-    return np.array([1 if i>=1 else -1 if i<=-1 else i for i in x])
+    for i,val in enumerate(x):
+        if(val>=1):
+            x[i] = 1
+        elif(val<=-1):
+            x[i] = -1
+    return x       
+    #return np.array([1 if i>=1 else -1 if i<=-1 else i for i in x])
 
 def cut_value(cut):
-    cut_value = 0
+    value = 0
     for row,i in enumerate(cut):
         for col,j in enumerate(cut):
             if(i*j<0):
                 #print(i,j)
-                #print("Row and column",row,col,J[row][col]/beta)
-                cut_value = cut_value + J[row][col]
-    return cut_value
+                #print("Row and column",row,col,J[row][col])
+                value = value + J[row][col]
+    return value/2
 
 
 
@@ -147,6 +156,7 @@ if(J_file):
     J = np.zeros([N,N])
     for i,line in enumerate(f.readlines()):
         J[i,:] = np.array([float(i) for i in line.split()])
+    N = J.shape[0]
     #print(J.shape)
     #print(np.where(J == J.T)[0].shape)
     f.close()
@@ -155,20 +165,17 @@ if(J_file):
 Alpha = np.arange(min_alpha,max_alpha,alpha_step)
 Beta = np.arange(min_beta,max_beta,beta_step)
 switch = 0
-print(Alpha)
-exit()
 final_x = np.zeros([N,1])
 pre_final_x = np.zeros([N,1])
 traj_x = np.zeros([N,1])
 
 solutions = []
-
 for alpha in Alpha:
     for beta in Beta:
         for run in range(N_runs):
             x_k = np.zeros([N,1])
             x_in = np.zeros([N,1])
-            #print("Working with Alpha = {}, Beta = {}".format(alpha,beta))
+            #print("Working with Alpha = {}, Beta = {}, Run = {}".format(alpha,beta,run))
             i = 0
             traj_x = x_in
             noise = np.random.normal(0,sig,[N,N_iters])
@@ -176,7 +183,9 @@ for alpha in Alpha:
                 # This is the calculated value to be put out to the DAC
                 # Put the coupled equation instead later
                 x_out = 2*np.around((feedback(x_k, alpha,beta,J) + np.array([noise[:,i]]).T)/2,3)
-
+                #print((x_out.T).shape)
+                #print(type(x_out))
+                #print("notanh(x_out)",notanh(x_out))
                 # The value received from the modulator
                 if(tanh_switch):
                     x_in = 2*np.around(modulator(np.tanh(x_out))/2,3)
@@ -193,6 +202,8 @@ for alpha in Alpha:
             
             if(plot_alpha<=alpha and switch == 0 and plot_beta<=beta):
                 # plot trajectory
+                print("Inside trajectory")
+                print("Plot alpha = {}\nAlpha = {}\nPlot Beta = {}\nBeta = {}\n".format(plot_alpha,alpha,plot_beta,beta))
                 if(trajectory):
                     switch = 1
                     plot1 = plt.figure(1)
@@ -204,10 +215,14 @@ for alpha in Alpha:
             pre_final_x = np.c_[pre_final_x,traj_x[:,-2]]
             final_x = np.c_[final_x,traj_x[:,-1]]
             cut = np.sign(traj_x[:,-1])
+            #print(cut.shape)
+            #print(cut_value(cut))
+            #print(pre_final_x.shape,final_x.shape,cut.shape)
             if(solver):
                 solutions.append([alpha,beta,run,cut_value(cut),cut])
 
-
+#print("J[81][99] = ",J[81][99])
+#print(solutions)
 
 
 if(bifurcation):
@@ -219,7 +234,7 @@ if(bifurcation):
     # # plt.plot(Alpha,pre_final_x[:,1:].T,"r.",markersize=0.5)
 
 if(solver):
-    opt_cut_value = 0
+    opt_cut_value = -1e10
     opt_alpha = 0
     opt_beta = 0
     opt_cut = np.zeros(N)
@@ -227,20 +242,20 @@ if(solver):
         if (i[3] > opt_cut_value):
             opt_cut_value = i[3]
             opt_alpha = i[0]
-            opt_beta = i[2]
+            opt_beta = i[1]
             opt_cut = i[4]
-    print("The nodes on two sides of the cut are: ")
-    print("The negative side:")
-    for node,i in enumerate(opt_cut):
-        if(i<0):
-            print(node+1)
-    print("The positive side:")
-    for node,i in enumerate(opt_cut):
-        if(i>0):
-            print(node+1)
-    #print(cut)
-    print("The number of positive nodes is: ",len(np.where(opt_cut>0)[0]))
-    print("The number of negative nodes is: ",len(np.where(opt_cut<0)[0]))
+    # print("The nodes on two sides of the cut are: ")
+    # print("The negative side:")
+    # for node,i in enumerate(opt_cut):
+    #     if(i<0):
+    #         print(node+1)
+    # print("The positive side:")
+    # for node,i in enumerate(opt_cut):
+    #     if(i>0):
+    #         print(node+1)
+    # #print(cut)
+    # print("The number of positive nodes is: ",len(np.where(opt_cut>0)[0]))
+    # print("The number of negative nodes is: ",len(np.where(opt_cut<0)[0]))
 
     print("The best cut value that was obtained is: ")
     print("Cut value: {}\nAlpha: {}\nBeta: {}".format(opt_cut_value,opt_alpha,opt_beta))
