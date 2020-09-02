@@ -9,7 +9,8 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 2
+#define N_spins 100
+#define BUFFER_SIZE 16*1024
 
 int p_step = 1000;
 int trig_delay = 8189+16384+4200;
@@ -17,8 +18,8 @@ int trig_delay = 8189+16384+4200;
 int N_iters = 30;
 int N_noise = 100;
 int N_runs = 1;
-int buff_size = 16*1024;
-int buff_per_spin = buff_size/N_spins;
+int buff_size = BUFFER_SIZE;
+int buff_per_spin = (int)BUFFER_SIZE/N_spins;
 
 float ALPHA_MAX = 1.5;
 float ALPHA_MIN = 1.5;
@@ -68,7 +69,7 @@ void gen_noise()
 	for(i=0;i<N_noise;i++)
 	{
 		noise[i] = (noise[i] - mu)/sig;
-		printf("\nNoise %d = %f\n",i ,noise[i]);
+		// printf("\nNoise %d = %f\n",i ,noise[i]);
 	}
 }
 
@@ -77,9 +78,9 @@ void read_J()
     int row,column;
     float value;
     char line[20];
+    printf("\nReading file for J...\n");
     fgets(line, 20, j_file);
     puts(line);
-    printf("\nReading file for J...\n");
     while(fgets(line, 20, j_file)!=0)
     {
         // puts(line);
@@ -94,9 +95,13 @@ void read_J()
 void feedback(float *fb, float alpha, float beta)
 {
     for(int i = 0;i < N_spins;i++)
+    {
         for(int j = 1;j < N_spins;j++)
+	{
             fb[i] += beta*J[i][(i+j)%N_spins]*x_k[(j+i)%N_spins];
-        fb[i] += alpha*[x_k];  
+	}
+        fb[i] += alpha*x_k[i];
+    }
 }
 
 void single_iteration(float alpha, float beta, int s,int iteration)
@@ -106,7 +111,6 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //compute x_out
 
     // Multiiply by alpha and add noise
-    printf("\nValue of n = %d", n);
     float *next = (float *)malloc(N_spins * sizeof(float));
     float *feedback_terms = (float *)malloc(N_spins * sizeof(float));
     
@@ -125,12 +129,12 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         {
             value = 1.0;
         }
-        else if(next1<=-1.0)
+        else if(value<=-1.0)
         {
             value = -1.0;
         }
 
-        next[i] = value;
+        next[i] = 0.01*n;
     }
 
     // x_out an array that will store the output
@@ -142,7 +146,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     {
         for(int j = i*buff_per_spin;j < (i+1)*(buff_per_spin);j++)
         {
-            x_out[j] = x_k[i];
+            x_out[j] =next[i];
         }
     }
 
@@ -154,7 +158,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // One waveform per burst
     rp_GenBurstCount(RP_CH_2, 1);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, 3);
+    rp_GenBurstRepetitions(RP_CH_2, -1);
     // Burst period. Will be dependent on computation time
     //rp_GenBurstPeriod(RP_CH_2, 130000);
 
@@ -193,7 +197,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //rp_GenOutDisable(RP_CH_2);
     //rp_GenReset();
 
-    trig_delay = 5000 + 16384;
+    trig_delay = 16384 + 5000;
 
     for(i=0;i<buff_size;i+=p_step)
     {
@@ -211,12 +215,16 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         x_k[i] = x_in[(i+1)*(buff_per_spin/2)];
     }
 
-    fprintf(fp,"%f %f %d %d %f",alpha,beta,s,iteration);
+    //fprintf(fp,"%f %f %d %d %f",alpha,beta,s,iteration);
+    for(i=0;i<buff_size;i++)
+    {
+	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
+    }
     for(i = 0;i < N_spins; i++)
     {
-        fprintf(" %f",x_k[i]);
+        //fprintf(fp," %f",x_k[i]);
     }
-    fprintf("\n");
+    fprintf(fp,"\n");
 }
 
 
@@ -224,7 +232,7 @@ int main (int argc, char **argv)
 {
 
     fp = fopen("data_2spins.csv","w");
-    FILE *j_file = fopen("./Maxcut_instances/pw05_100.3.txt","r");
+    j_file = fopen("./Maxcut_instances/pw05_100.3.txt","r");
 
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
@@ -240,10 +248,10 @@ int main (int argc, char **argv)
 
     read_J();
 
-    for(i = 0;i< N_spins;i++)
-        for(int j = 0;j<N_spins;j++)
-            if(J[i][j]>0)
-                printf("J[%d][%d]=%f\n",i,j,J[i][j]);
+    //for(i = 0;i< N_spins;i++)
+    //    for(int j = 0;j<N_spins;j++)
+    //        if(J[i][j]>0)
+    //            printf("J[%d][%d]=%f\n",i,j,J[i][j]);
 
     // Initialization of API
     if (rp_Init() != RP_OK) {
@@ -308,8 +316,8 @@ int main (int argc, char **argv)
                         BETA_MAX = BETA_MIN;
                         break;
                 case 'j': //Change value of J
-                        fclose(j_file);
-                        j_file = fopen(argc[++a],"w");
+                       // fclose(j_file);
+                        //j_file = fopen(argv[++a],"w");
                         break;
                 case 'N': // Number of spins/runs
                         N_runs = atoi(argv[++a]);
