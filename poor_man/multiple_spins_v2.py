@@ -84,7 +84,8 @@ if(J_file):
     for i,line in enumerate(f.readlines()):
         J[i,:] = np.array([float(i) for i in line.split()])
     J = beta*J
-    #print(J)
+    #print(J.shape)
+    #print(np.where(J == J.T)[0].shape)
     f.close()
 
 
