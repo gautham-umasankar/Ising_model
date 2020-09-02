@@ -6,9 +6,9 @@ import sys
 N = 3
 alpha_step = 0.1
 N_iters = 100
-max_alpha = 4
-min_alpha = -4
-plot_alpha = 2
+max_alpha = 4.0
+min_alpha = -4.0
+plot_alpha = (max_alpha+min_alpha)/2
 offset = 0.5
 sig = 0.04
 V_pi = 1 # change this later
