@@ -9,7 +9,7 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 30 
+#define N_spins 80
 #define BUFFER_SIZE 16*1024
 
 int p_step = 100;
