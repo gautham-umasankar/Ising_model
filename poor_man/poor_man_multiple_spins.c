@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 16*1024
 
 int p_step = 100;
-int trig_delay = 16384+3500;
+int trig_delay = 16384+3900;
 
 int N_iters = 30;
 int N_noise = 100;
