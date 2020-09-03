@@ -9,7 +9,7 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 50
+#define N_spins 3
 #define BUFFER_SIZE 16*1024
 
 int p_step = 1000;
@@ -99,8 +99,9 @@ void feedback(float *fb, float alpha, float beta)
     {
         for(int j = 1;j < N_spins;j++)
 	{
-            fb[i] += beta*J[i][(i+j)%N_spins]*x_k[(j+i)%N_spins];
+            fb[i] += J[i][(i+j)%N_spins]*x_k[(j+i)%N_spins];
 	}
+	fb[i] *= beta;
         fb[i] += alpha*x_k[i];
     }
 }
@@ -114,7 +115,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // Multiiply by alpha and add noise
     float *next = (float *)malloc(N_spins * sizeof(float));
     float *feedback_terms = (float *)malloc(N_spins * sizeof(float));
-    
+ 
+    for(i=0;i<N_spins;i++)
+	feedback_terms[i] = 0;  
+
     feedback(feedback_terms, alpha, beta);
     // Calculate the feedback value according to the equation
     for(i = 0;i < N_spins;i++)
@@ -134,7 +138,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         {
             value = -1.0;
         }
-
+	printf("Value = %f", value);
         //next[i] = 0.01*n;
 	next[i] = value;
     }
@@ -205,21 +209,22 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i=0;i<buff_size;i+=p_step)
     {
-	    printf("x_out[%d]= %f \n",i,x_out[i]);
+	printf("x_out[%d]= %f \n",i,x_out[i]);
     }
 
-    // Average over the buffer size
     for(i = 0; i < buff_size; i+=p_step)
     {
-		printf("x_in[%d] = %f \n",i,x_in[i]);
+	printf("x_in[%d] = %f \n",i,x_in[i]);
     }
 
     for(i = 0;i < N_spins; i++)
     {
         x_k[i] = x_in[(i+1)*(buff_per_spin/2)];
+	x_k[i] -= offset;
+	x_k[i] *= scale;
     }
 
-    fprintf(fp2,"%f %f %d %d %f",alpha,beta,s,iteration);
+    fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
     for(i=0;i<buff_size;i++)
     {
 	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
@@ -250,9 +255,10 @@ float cut_value()
 int main (int argc, char **argv) 
 {
 
-    fp = fopen("data_2spins.csv","w");
-    fp2 = fopen("data_cut_50spins.csv","w");
-    j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
+    fp = fopen("data_3spins.csv","w");
+    fp2 = fopen("data_cut_3spins.csv","w");
+    // j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
+    j_file = fopen("./J_3spins.txt", "r");
 
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
@@ -268,11 +274,18 @@ int main (int argc, char **argv)
 
     read_J();
 
+    x_k = (float *)malloc(N_spins * sizeof(float));
     for(i = 0;i< N_spins;i++)
+    {
+	x_k[i] = 0.0;
         for(int j = 0;j<N_spins;j++)
+	{
             if(J[i][j]>0)
                 printf("J[%d][%d]=%f\n",i,j,J[i][j]);
-
+	    else
+		J[i][j] = 0.0;
+	}
+    }
     // Initialization of API
     if (rp_Init() != RP_OK) {
         fprintf(stderr, "Red Pitaya API init failed!\n");
@@ -373,21 +386,15 @@ int main (int argc, char **argv)
             // Generate new noise for each alpha
             gen_noise();
 
-            //add alpha to the diagonal entries of J
-            for(i = 0;i < N_spins;i++)
-            {
-                J[i][i] = alpha;
-            }
-
             for(s = 0;s < N_runs; s++)
             {
-                x_k = (float *)malloc(N_spins * sizeof(float));
                 for(i = 0;i < N_iters;i++)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
 		printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta,cut_value());
                 free(x_k);
+                x_k = (float *)malloc(N_spins * sizeof(float));
             }
         }
     }
