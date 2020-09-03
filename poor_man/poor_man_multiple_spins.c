@@ -199,7 +199,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //rp_GenOutDisable(RP_CH_2);
     //rp_GenReset();
 
-    trig_delay = 1400+16384;
+    trig_delay = 3900+16384;
 
     for(i=0;i<buff_size;i+=p_step)
     {
