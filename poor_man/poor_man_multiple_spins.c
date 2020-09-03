@@ -9,17 +9,17 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 3
 #define BUFFER_SIZE 16*1024
 
 int p_step = 1000;
 int trig_delay = 16384+3900;
 
+int N_spins = 1;
 int N_iters = 30;
 int N_noise = 100;
 int N_runs = 1;
 int buff_size = BUFFER_SIZE;
-int buff_per_spin = (int)BUFFER_SIZE/N_spins;
+int buff_per_spin;
 
 float ALPHA_MAX = 1.5;
 float ALPHA_MIN = 1.5;
@@ -33,12 +33,11 @@ float offset = 0.04;
 float sig_f = 0.025;
 float scale = 20;
 
-void *acquisition_handler(void *);
-
-pthread_t acquisition_thread;
-
-// Buffer size
-//const uint32_t buff_size = 16;
+void gen_noise();
+void read_J();
+void feedback();
+void single_iteration();
+float cut_value();
 
 // x_in stores the input
 volatile float *x_in;
@@ -79,8 +78,7 @@ void read_J()
     float value;
     char line[20];
     printf("\nReading file for J...\n");
-    fgets(line, 20, j_file);
-    puts(line);
+    
     while(fgets(line, 20, j_file)!=0)
     {
         // puts(line);
@@ -113,11 +111,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //compute x_out
 
     // Multiiply by alpha and add noise
-    float *next = (float *)malloc(N_spins * sizeof(float));
-    float *feedback_terms = (float *)malloc(N_spins * sizeof(float));
- 
-    for(i=0;i<N_spins;i++)
-	feedback_terms[i] = 0;  
+    float *feedback_terms = (float *)calloc(N_spins, sizeof(float)); 
 
     feedback(feedback_terms, alpha, beta);
     // Calculate the feedback value according to the equation
@@ -138,21 +132,16 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         {
             value = -1.0;
         }
-	printf("Value = %f", value);
+	    printf("Value = %f", value);
         //next[i] = 0.01*n;
-	next[i] = value;
-    }
 
-    // x_out an array that will store the output
+        // x_out an array that will store the output
     
-    // Store the value in the buffer to be given as output for the next
-    // buff_size cycles
-
-    for(i = 0;i < N_spins;i++)
-    {
+        // Store the value in the buffer to be given as output for the next
+        // buff_size cycles
         for(int j = i*buff_per_spin;j < (i+1)*(buff_per_spin);j++)
         {
-            x_out[j] =next[i];
+            x_out[j] = value;
         }
     }
 
@@ -181,7 +170,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     int pos;
     rp_AcqGetWritePointerAtTrig(&pos);
 
-    printf("Pos right after trigger now:%d",pos);
+    printf("Pos right after trigger now:%d\n",pos);
 
     rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
 
@@ -209,25 +198,26 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i=0;i<buff_size;i+=p_step)
     {
-	printf("x_out[%d]= %f \n",i,x_out[i]);
+	    printf("x_out[%d]= %f \n",i,x_out[i]);
     }
 
     for(i = 0; i < buff_size; i+=p_step)
     {
-	printf("x_in[%d] = %f \n",i,x_in[i]);
+	    printf("x_in[%d] = %f \n",i,x_in[i]);
     }
 
     for(i = 0;i < N_spins; i++)
     {
         x_k[i] = x_in[(i+1)*(buff_per_spin/2)];
-	x_k[i] -= offset;
-	x_k[i] *= scale;
+	    x_k[i] -= offset;
+	    x_k[i] *= scale;
     }
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
+
     for(i=0;i<buff_size;i++)
     {
-	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
+	    fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
     }
     for(i = 0;i < N_spins; i++)
     {
@@ -235,6 +225,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     }
     fprintf(fp2,"\n");
 }
+
 float cut_value()
 {
 	float value = 0;
@@ -260,55 +251,6 @@ int main (int argc, char **argv)
     // j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
     j_file = fopen("./J_3spins.txt", "r");
 
-    x_out = (float *)malloc(buff_size * sizeof(float));
-    x_in = (float *)malloc(buff_size * sizeof(float));
-    noise = (float *)malloc(N_noise * sizeof(float));
-
-    int i,s;
-
-    J = (float **)malloc(N_spins * sizeof(float *));
-    for(int k = 0;k < N_spins;k++)
-    {
-        J[k] = (float *)malloc(N_spins * sizeof(float));
-    }
-
-    read_J();
-
-    x_k = (float *)malloc(N_spins * sizeof(float));
-    for(i = 0;i< N_spins;i++)
-    {
-	x_k[i] = 0.0;
-        for(int j = 0;j<N_spins;j++)
-	{
-            if(J[i][j]>0)
-                printf("J[%d][%d]=%f\n",i,j,J[i][j]);
-	    else
-		J[i][j] = 0.0;
-	}
-    }
-    // Initialization of API
-    if (rp_Init() != RP_OK) {
-        fprintf(stderr, "Red Pitaya API init failed!\n");
-        return EXIT_FAILURE;
-    }
-
-    float alpha;
-    float beta;
-
-    gen_noise();
-    //initialize x_out to zero
-    for(i=0;i<buff_size;i++)
-    {
-	    x_out[i] = noise[i];
-    }
-
-    rp_AcqReset();
-    rp_AcqSetDecimation(1);
-
-    rp_GenOutEnable(RP_CH_2);
-    // Think we might have to change this
-
-        
     if(argc > 1)
     {
         for(int a=1;a<argc;a++)
@@ -349,10 +291,10 @@ int main (int argc, char **argv)
                         BETA_MAX = BETA_MIN;
                         break;
                 case 'j': //Change value of J
-                       // fclose(j_file);
-                        //j_file = fopen(argv[++a],"w");
+                        fclose(j_file); 
+                        j_file = fopen(argv[++a],"w");
                         break;
-                case 'N': // Number of spins/runs
+                case 'r': // Number of spins/runs
                         N_runs = atoi(argv[++a]);
                         break;
                 case 'o': // Offset
@@ -373,11 +315,57 @@ int main (int argc, char **argv)
             }
         }
     }
+
     //printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\n   \
     N_iters= %d\nN_runs= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,\
     offset,N_iters,N_runs,buff_size);
 
-    fprintf(fp,"#Alpha Beta Run/Spin Iteration Values\n");
+    char line_for_N[20];
+    fgets(line_for_N, 20, j_file);
+    // puts(line_for_N);
+    sscanf(line_for_N, "%d %*d", &N_spins);
+
+    x_out = (float *)calloc(buff_size, sizeof(float));
+    x_in = (float *)calloc(buff_size, sizeof(float));
+    noise = (float *)calloc(N_noise, sizeof(float));
+
+    int i,s;
+
+    J = (float **)calloc(N_spins, sizeof(float *));
+    for(int k = 0;k < N_spins;k++)
+    {
+        J[k] = (float *)calloc(N_spins, sizeof(float));
+    }
+
+    read_J();
+
+    x_k = (float *)calloc(N_spins, sizeof(float));
+    for(i = 0;i< N_spins;i++)
+    {
+        for(int j = 0;j<N_spins;j++)
+	    {
+            if(J[i][j]>0)
+                printf("J[%d][%d]=%f\n",i,j,J[i][j]);
+	    }
+    }
+    // Initialization of API
+    if (rp_Init() != RP_OK) 
+    {
+        fprintf(stderr, "Red Pitaya API init failed!\n");
+        return EXIT_FAILURE;
+    }
+
+    float alpha;
+    float beta;
+
+    rp_AcqReset();
+    rp_AcqSetDecimation(1);
+
+    rp_GenOutEnable(RP_CH_2);
+
+    buff_per_spin = (int)BUFFER_SIZE/N_spins;
+
+    fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
@@ -392,9 +380,9 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
-		printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta,cut_value());
+		        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
                 free(x_k);
-                x_k = (float *)malloc(N_spins * sizeof(float));
+                x_k = (float *)calloc(N_spins, sizeof(float));
             }
         }
     }
