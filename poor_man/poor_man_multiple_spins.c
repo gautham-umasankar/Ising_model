@@ -9,10 +9,10 @@
 #include "redpitaya/rp.h"
 
 #define M_PI 3.14159265358979323846
-#define N_spins 80
+#define N_spins 50
 #define BUFFER_SIZE 16*1024
 
-int p_step = 100;
+int p_step = 1000;
 int trig_delay = 16384+3900;
 
 int N_iters = 30;
@@ -45,7 +45,7 @@ volatile float *x_in;
 float *x_k;
 volatile float *x_out;
 
-FILE *fp, *j_file;
+FILE *fp, *fp2, *j_file;
 float *noise;
 float **J;
 
@@ -87,6 +87,7 @@ void read_J()
         sscanf(line, "%d %d %f", &row, &column, &value);
         // printf("J[%d][%d]=%f\n",row,column,J[row][column]);
         J[row-1][column-1] = value;
+	J[column-1][row-1] = value;
     }
     printf("Done reading.\n");
     fclose(j_file);
@@ -134,7 +135,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
             value = -1.0;
         }
 
-        next[i] = 0.01*n;
+        //next[i] = 0.01*n;
+	next[i] = value;
     }
 
     // x_out an array that will store the output
@@ -217,24 +219,40 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         x_k[i] = x_in[(i+1)*(buff_per_spin/2)];
     }
 
-    //fprintf(fp,"%f %f %d %d %f",alpha,beta,s,iteration);
+    fprintf(fp2,"%f %f %d %d %f",alpha,beta,s,iteration);
     for(i=0;i<buff_size;i++)
     {
 	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
     }
     for(i = 0;i < N_spins; i++)
     {
-        //fprintf(fp," %f",x_k[i]);
+        fprintf(fp2," %f",x_k[i]);
     }
-    fprintf(fp,"\n");
+    fprintf(fp2,"\n");
 }
-
+float cut_value()
+{
+	float value = 0;
+	for(int i=0;i<N_spins;i++)
+	{
+		for(int j=0;j<N_spins;j++)
+		{
+			if(x_k[i]*x_k[j]<0)
+			{
+				value = value + J[i][j];
+			}
+		}
+	}
+	value/=2;
+	return value;
+}
 
 int main (int argc, char **argv) 
 {
 
     fp = fopen("data_2spins.csv","w");
-    j_file = fopen("./Maxcut_instances/pw05_100.3.txt","r");
+    fp2 = fopen("data_cut_50spins.csv","w");
+    j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
 
     x_out = (float *)malloc(buff_size * sizeof(float));
     x_in = (float *)malloc(buff_size * sizeof(float));
@@ -248,12 +266,12 @@ int main (int argc, char **argv)
         J[k] = (float *)malloc(N_spins * sizeof(float));
     }
 
-    //read_J();
+    read_J();
 
-    //for(i = 0;i< N_spins;i++)
-    //    for(int j = 0;j<N_spins;j++)
-    //        if(J[i][j]>0)
-    //            printf("J[%d][%d]=%f\n",i,j,J[i][j]);
+    for(i = 0;i< N_spins;i++)
+        for(int j = 0;j<N_spins;j++)
+            if(J[i][j]>0)
+                printf("J[%d][%d]=%f\n",i,j,J[i][j]);
 
     // Initialization of API
     if (rp_Init() != RP_OK) {
@@ -368,6 +386,7 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
+		printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta,cut_value());
                 free(x_k);
             }
         }
