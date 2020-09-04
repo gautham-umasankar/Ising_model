@@ -35,8 +35,8 @@ float scale = 20;
 
 void gen_noise();
 void read_J();
-void feedback();
-void single_iteration();
+void feedback(float *, float, float);
+void single_iteration(float, float, int, int);
 float cut_value();
 
 // x_in stores the input
@@ -119,9 +119,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     {
         n = rand()%N_noise;
         float value = -feedback_terms[i] + noise[n];
-        
-        // Remove in lab
-        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 
+        printf("feedback_terms[%d] = %f noise = %f value = %f\n",i,feedback_terms[i],noise[n],value); 
+	printf("Value after cos is: %f \n",value);
 
         //Threshold the output
         if(value >= 1.0)
@@ -132,7 +131,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         {
             value = -1.0;
         }
-	    printf("Value = %f", value);
+        
+	// Remove in lab
+        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
+	//printf("Value = %f\n", value);
         //next[i] = 0.01*n;
 
         // x_out an array that will store the output
@@ -170,7 +172,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     int pos;
     rp_AcqGetWritePointerAtTrig(&pos);
 
-    printf("Pos right after trigger now:%d\n",pos);
+    //printf("Pos right after trigger now:%d\n",pos);
 
     rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
 
@@ -178,12 +180,12 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     do
     {
         rp_AcqGetTriggerState(&state);
-	    rp_AcqGetWritePointer(&pos);
-        printf("Pos = %d\n", pos);
+	rp_AcqGetWritePointer(&pos);
+        //printf("Pos = %d\n", pos);
     }while(state == RP_TRIG_STATE_TRIGGERED);
 	
     rp_AcqGetWritePointer(&pos);
-    printf("Pos = %d\n",pos);
+    //printf("Pos = %d\n",pos);
     // Get data into buff
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
 
@@ -208,7 +210,9 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i = 0;i < N_spins; i++)
     {
-        x_k[i] = x_in[(i+1)*(buff_per_spin/2)];
+	    int index = (2*i+1)*buff_per_spin/2;
+	    printf("Index = %d \n",index);
+            x_k[i] = x_in[index];
 	    x_k[i] -= offset;
 	    x_k[i] *= scale;
     }
@@ -292,7 +296,7 @@ int main (int argc, char **argv)
                         break;
                 case 'j': //Change value of J
                         fclose(j_file); 
-                        j_file = fopen(argv[++a],"w");
+                        j_file = fopen(argv[++a],"r");
                         break;
                 case 'r': // Number of spins/runs
                         N_runs = atoi(argv[++a]);
@@ -310,7 +314,7 @@ int main (int argc, char **argv)
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
 			            break;
-                default:printf("Invalid option.\n");
+                default:printf("Invalid option: %c\n",opt);
 			            return 0;
             }
         }
