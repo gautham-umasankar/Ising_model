@@ -293,10 +293,10 @@ float cut_value()
 int main (int argc, char **argv) 
 {
 
-    fp = fopen("data_3spins.csv","w");
-    fp2 = fopen("data_cut_3spins.csv","w");
+    fp = fopen("xout_xin.csv","w");
+    fp2 = fopen("traj.csv","w");
     // j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
-    j_file = fopen("./J_3spins.txt", "r");
+    j_file = fopen("./gset_format/J_3spins.txt", "r");
 
     if(argc > 1)
     {
