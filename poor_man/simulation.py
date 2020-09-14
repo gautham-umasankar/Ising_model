@@ -7,8 +7,8 @@ N = 3           # Number of spins
 N_iters = 100   # Number of iterations per run
 N_runs = 10     # Number of runs 
 
-max_alpha = 4.0
-min_alpha = -4.0
+max_alpha = 2.0
+min_alpha = 0.5
 alpha_step = 0.1
 plot_alpha = (max_alpha + min_alpha)/2
 
@@ -92,13 +92,10 @@ if(len(sys.argv)>1):
             J_file = str(sys.argv[i+1])
         elif(opt == '-sol'):
             solver = 1
-            #i+=1
         elif(opt == '-traj'):
             trajectory = 1
-            #i+=1
         elif(opt == '-bif'):
             bifurcation = 1
-            #i+=1
         elif(opt == '-data'):
             data_file = str(sys.argv[i+1])
         elif(opt == '-notanh'):
@@ -125,7 +122,7 @@ def notanh(x):
             x[i] = 1
         elif(val<=-1):
             x[i] = -1
-    return x       
+    return x        
     #return np.array([1 if i>=1 else -1 if i<=-1 else i for i in x])
 
 def cut_value(cut):
@@ -153,13 +150,16 @@ J[N-1][0] = 1
 #Load J from a file
 if(J_file):
     f = open(J_file,"r")
+    N, number_of_edges = [int(i) for i in f.readline().split()]
     J = np.zeros([N,N])
-    for i,line in enumerate(f.readlines()):
-        J[i,:] = np.array([float(i) for i in line.split()])
-    N = J.shape[0]
-    #print(J.shape)
-    #print(np.where(J == J.T)[0].shape)
+    lines = f.readlines()
+    for line in lines:
+        l = line.split()
+        r,c,w = int(l[0])-1, int(l[1])-1, float(l[2])
+        J[r][c] = w
+        J[c][r] = w        
     f.close()
+    print(J)
 
 #Create Alpha and Beta arrays
 Alpha = np.arange(min_alpha,max_alpha,alpha_step)
@@ -200,16 +200,15 @@ for alpha in Alpha:
                 # Add to trajectory
                 traj_x = np.c_[traj_x,x_k]
             
-            if(plot_alpha<=alpha and switch == 0 and plot_beta<=beta):
-                # plot trajectory
-                print("Inside trajectory")
+            if(abs(alpha - plot_alpha)<alpha_step and switch == 0 and abs(beta - plot_beta)<beta_step):
+                # plot trajectory   
                 print("Plot alpha = {}\nAlpha = {}\nPlot Beta = {}\nBeta = {}\n".format(plot_alpha,alpha,plot_beta,beta))
+                switch = 1
                 if(trajectory):
-                    switch = 1
                     plot1 = plt.figure(1)
                     for i in range(N):
                         plt.plot(traj_x[i],"-",label = "spin {}".format(i))
-                    #plt.legend()       
+                    plt.legend()       
                     plt.title("Run number = {} Alpha = {} Beta = {}".format(run,alpha,beta))
         
             pre_final_x = np.c_[pre_final_x,traj_x[:,-2]]
@@ -223,7 +222,6 @@ for alpha in Alpha:
 
 #print("J[81][99] = ",J[81][99])
 #print(solutions)
-
 
 if(bifurcation):
     plot2 = plt.figure(2)
