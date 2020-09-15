@@ -23,6 +23,8 @@ V_pi = 1.0          # V_pi of the modulator
 I0 = 1.0            # Action of photodiode and MZM
 DC_bias = V_pi/4    # Action of DC_bias
 
+scaling = 1.0
+
 J_file = 0          #Flags which enable and disable different features
 bifurcation = 0 
 trajectory = 0
@@ -83,6 +85,10 @@ if(len(sys.argv)>1):
             I0 = float(sys.argv[i+1])
         elif(opt == '-pi'):
             V_pi = float(sys.argv[i+1])
+
+        #Scaling parameters
+        elif(opt == "-scaling"):
+            scaling = float(sys.argv[i+1])
         
         #Noise parameters
         elif(opt == '-sig'):
@@ -103,7 +109,6 @@ if(len(sys.argv)>1):
             data_file = str(sys.argv[i+1])
         elif(opt == '-notanh'):
             tanh_switch = 0
-        #sys.argv.pop(i+1)
         i+=1
 
 def modulator(x):
@@ -140,10 +145,12 @@ J = np.zeros([N,N])
 for i in range(1,N-1):
     J[i][i+1] = 1
     J[i][i-1] = 1
-J[0][1] = 1
-J[0][N-1] = 1
-J[N-1][N-2] = 1
-J[N-1][0] = 1
+
+if(N >= 2):
+    J[0][1] = 1
+    J[0][N-1] = 1
+    J[N-1][N-2] = 1
+    J[N-1][0] = 1
 
 #Load J from a file
 if(J_file):
@@ -190,8 +197,9 @@ for alpha in Alpha:
                 else:
                     x_in = 2*np.around(modulator(notanh(x_out))/2,3)
 
+                # print(x_in)
                 # The state value
-                x_k = x_in-offset
+                x_k = scaling*(x_in-offset)
 
                 # print("x_k = ",x_k)
                 i += 1
