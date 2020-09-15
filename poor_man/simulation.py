@@ -198,9 +198,9 @@ for alpha in Alpha:
                 # Add to trajectory
                 traj_x = np.c_[traj_x,x_k]
             
-            if(abs(alpha - plot_alpha)<alpha_step and switch == 0 and abs(beta - plot_beta)<beta_step):
+            if(abs(np.around(alpha,3) - plot_alpha)<alpha_step and switch == 0 and abs(np.around(beta,3) - plot_beta)<beta_step):
                 # plot trajectory   
-                print("Plot alpha = {}\nAlpha = {}\nPlot Beta = {}\nBeta = {}\n".format(plot_alpha,alpha,plot_beta,beta))
+                #print("Plot alpha = {}\nAlpha = {}\nPlot Beta = {}\nBeta = {}\n".format(plot_alpha,alpha,plot_beta,beta))
                 switch = 1
                 if(trajectory):
                     plot1 = plt.figure(1)
