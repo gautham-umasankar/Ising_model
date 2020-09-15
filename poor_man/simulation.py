@@ -26,6 +26,7 @@ DC_bias = V_pi/4    # Action of DC_bias
 J_file = 0          #Flags which enable and disable different features
 bifurcation = 0 
 trajectory = 0
+legend = 0
 solver = 0
 data_file = 0
 tanh_switch = 1
@@ -94,6 +95,8 @@ if(len(sys.argv)>1):
             solver = 1
         elif(opt == '-traj'):
             trajectory = 1
+        elif(opt == '-legend'):
+            legend = 1
         elif(opt == '-bif'):
             bifurcation = 1
         elif(opt == '-data'):
@@ -154,7 +157,7 @@ if(J_file):
         J[r][c] = w
         J[c][r] = w        
     f.close()
-    print(J)
+    #print(J)
 
 #Create Alpha and Beta arrays
 Alpha = np.arange(min_alpha,max_alpha,alpha_step)
@@ -203,8 +206,11 @@ for alpha in Alpha:
                     plot1 = plt.figure(1)
                     for i in range(N):
                         plt.plot(traj_x[i],"-",label = "spin {}".format(i))
-                    plt.legend()       
-                    plt.title("Run number = {} Alpha = {} Beta = {}".format(run,alpha,beta))
+                    if(legend):
+                        plt.legend()       
+                    plt.title("Run number = {} Alpha = {} Beta = {} Cut = {}".format(run,np.around(alpha,3),np.around(beta,3),cut_value(np.sign(traj_x[:,-1]))))
+                    plt.xlabel("Iteration Number")
+                    plt.ylabel("State of the spin")
         
             pre_final_x = np.c_[pre_final_x,traj_x[:,-2]]
             final_x = np.c_[final_x,traj_x[:,-1]]
@@ -213,19 +219,23 @@ for alpha in Alpha:
             #print(cut_value(cut))
             #print(pre_final_x.shape,final_x.shape,cut.shape)
             if(solver):
-                solutions.append([alpha,beta,run,cut_value(cut),cut])
+                solutions.append([alpha,beta,run,cut_value(cut),cut,traj_x])
 
 if(bifurcation):
     plot2 = plt.figure(2)
     index_alpha = np.where(abs(Beta-plot_beta)<beta_step)[0][0]
     plt.plot(Alpha,final_x[:,1::N_runs*len(Beta)].T,"r.",markersize=1.5)#[:np.where(plot_beta<Beta)[0][0]]
     plt.title("Final value vs Alpha at beta = 0")
+    plt.xlabel("Alpha")
+    plt.ylabel("Final Value")
     # Include plot against beta here. Need to choose an alpha for this
     plot3 = plt.figure(3)
     index_alpha = np.where(abs(Alpha-plot_alpha)<alpha_step)[0][0]
     index_alpha *= N_runs*len(Beta)
     plt.plot(Beta,final_x[:, index_alpha:index_alpha+N_runs*len(Beta):N_runs].T,"r.",markersize=1.5)
     plt.title("Final value vs Beta at alpha = {}".format(plot_alpha))
+    plt.xlabel("Beta")
+    plt.ylabel("Final Value")
     # # plt.plot(Alpha,pre_final_x[:,1:].T,"r.",markersize=0.5)
 
 if(solver):
@@ -239,6 +249,7 @@ if(solver):
             opt_alpha = i[0]
             opt_beta = i[1]
             opt_cut = i[4]
+            opt_traj = i[5]
     # print("The nodes on two sides of the cut are: ")
     # print("The negative side:")
     # for node,i in enumerate(opt_cut):
@@ -254,5 +265,14 @@ if(solver):
 
     print("The best cut value that was obtained is: ")
     print("Cut value: {}\nAlpha: {}\nBeta: {}".format(opt_cut_value,opt_alpha,opt_beta))
+    plot4 = plt.figure(4)
+    for i in range(N):
+        plt.plot(opt_traj[i],"-",label = "spin {}".format(i))
+    if(legend):
+        plt.legend()       
+    plt.title("Best solution. Alpha = {} Beta = {} Cut = {}".format(np.around(opt_alpha,3),np.around(opt_beta,3),opt_cut_value))
+    plt.xlabel("Iteration Number")
+    plt.ylabel("State of the spin")
+
 
 plt.show()
