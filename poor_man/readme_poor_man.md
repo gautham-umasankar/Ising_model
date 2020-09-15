@@ -64,3 +64,21 @@ One interesting effect in the loop-back setup is that there is an attenuation ca
 <p align = "center">
 <img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/loopback/loopback_attenuation_m_0_884979_c_0_0541717.png">
 </p>
+
+# Simulation Usage
+The simulation code is called `simulation.py`. It is a `Python3` program which can be run with the following command line arguments
+1. -N Number of spins 
+2. -iter Number of iterations
+3. -run Number of runs per value of alpha and beta
+4. -a single value of alpha
+5. -b single value of beta
+6. -ua, -da, -sa Upper, lower limits and step size in a sweep of alpha (Replace 'a' by 'b', -ua becomes -ub and so on for a sweep of alpha)
+7. -J File name for input of adjacency matrix in the GSet format
+8. -traj Option for enabling the plotting of a trajectory
+9. -sol Option for finding the best cut in the given range of alpha and beta
+10. -bif Option for enabling the plotting of a bifurcation
+
+For other options, please refer the code.
+
+
+
