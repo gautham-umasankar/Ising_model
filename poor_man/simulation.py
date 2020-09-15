@@ -112,7 +112,7 @@ if(len(sys.argv)>1):
         i+=1
 
 def modulator(x):
-    return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/V_pi),2) #Check this equation later
+    return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/(2*V_pi)),2) #Check this equation later
 
 def feedback(x,alpha,beta,J):
     J = beta*J
@@ -238,7 +238,11 @@ if(bifurcation):
     plt.ylabel("Final Value")
     # Include plot against beta here. Need to choose an alpha for this
     plot3 = plt.figure(3)
-    index_alpha = np.where(abs(Alpha-plot_alpha)<alpha_step)[0][0]
+    try:
+        index_alpha = np.where(abs(Alpha-plot_alpha)<alpha_step)[0][0]
+    except:
+        plt.show()
+        exit(0)
     index_alpha *= N_runs*len(Beta)
     plt.plot(Beta,final_x[:, index_alpha:index_alpha+N_runs*len(Beta):N_runs].T,"r.",markersize=1.5)
     plt.title("Final value vs Beta at alpha = {}".format(plot_alpha))
