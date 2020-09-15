@@ -292,11 +292,25 @@ float cut_value()
 
 int main (int argc, char **argv) 
 {
+    struct tm *timenow;
+    char sync_filename[40], traj_filename[40];
 
-    fp = fopen("xout_xin.csv","w");
-    fp2 = fopen("traj.csv","w");
-    // j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
+    time_t now = time(NULL);
+    timenow = localtime(&now);
+
+    strftime(sync_filename, sizeof(sync_filename), "xout_xin_%d_%m_%Y_%H_%M_%S", timenow);
+    strftime(traj_filename, sizeof(sync_filename), "trajectory_%d_%m_%Y_%H_%M_%S", timenow);
+
+    char comment[100];
+    printf("Enter comment on file: ");
+    fgets(comment, sizeof(comment), stdin);  // read string
+
+    fp = fopen(sync_filename,"w");
+    fp2 = fopen(traj_filename,"w");
     j_file = fopen("./gset_format/J_3spins.txt", "r");
+
+    fprintf(fp, "# %s\n", comment);
+    fprintf(fp, "# %s\n", comment);
 
     if(argc > 1)
     {
