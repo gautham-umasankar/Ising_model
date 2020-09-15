@@ -8,11 +8,16 @@ This repository also contains a Python based simulation of the same experiment.
 When the non-linear dynamics indicated by the equations below are followed, the system naturally exhibits a pitch-fork bifurcation in the photo-voltage as the feedback factor alpha increases, which is shown in the plots below. 
 
 This is a bifurcation as seen in simulation:
-![Bifurcation as seen in simulation](https://github.com/gautham-umasankar/Ising_model/tree/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png)
+<p align = "center">
+<img width = 400 height = 300 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
+</p>
+<!---![Bifurcation as seen in simulation](https://github.com/gautham-umasankar/Ising_model/tree/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png)--->
 
 This is a bifurcation as seen in the experiment:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
-
+<p align = "center">
+<img width = 400 height = 300 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
+</p>
 The trajectory of a single spin as seen in the simulation:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
 
