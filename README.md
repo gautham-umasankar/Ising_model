@@ -1,7 +1,8 @@
 # Ising Machines
 This project is about Ising Machines, which are programs/devices which settle naturally to the ground state of a given Ising Hamiltonian:
-
-![equation](https://latex.codecogs.com/gif.latex?H%20%3D%20-%5Csum_%7Bi%3D1%7D%5E%7BN%7Dh_%7Bi%7D%5Csigma_%7Bi%7D%20-%20%5Csum_%7Bi%2Cj%3D1%7D%5E%7Bi%2Cj%3DN%7DJ_%7Bi%2Cj%7D%5Csigma_%7Bi%7D%5Csigma_%7Bj%7D)
+<p align = "center">
+<img src= https://latex.codecogs.com/gif.latex?H%20%3D%20-%5Csum_%7Bi%3D1%7D%5E%7BN%7Dh_%7Bi%7D%5Csigma_%7Bi%7D%20-%20%5Csum_%7Bi%2Cj%3D1%7D%5E%7Bi%2Cj%3DN%7DJ_%7Bi%2Cj%7D%5Csigma_%7Bi%7D%5Csigma_%7Bj%7D />
+</p>
 
 Many NP-Complete problems like [Number Partioning](https://en.wikipedia.org/wiki/Partition_problem) and the [Max-cut](https://en.wikipedia.org/wiki/Maximum_cut) problem can be reframed into an Ising Hamiltonian which we can optimize. We attempt to create different Ising Machines and benchmark them versus classical heuristic methods like Metropolis Monte-Carlo (MC) Sampling Methods. At present, we are close to creating a Coherent Ising Machine. We have also worked on MC Sampling (Python Code for the Number Partioning (NP-complete) and the Max-cut (NP-Complete) Problems) and an initial attempt at using GPUs for the same. 
   
