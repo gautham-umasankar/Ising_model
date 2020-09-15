@@ -16,7 +16,7 @@ This is a bifurcation as seen in simulation:
 This is a bifurcation as seen in the experiment:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
 <p align = "center">
-<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/experiment/bifurcation_plot_uncoupled.png">
 </p>
 
 Once the matrix J is initialized to the relevant adjacency matrix, the system naturally solves the maxcut problem, since the maxcut problem can be recast into the Ising Hamiltonian with the coupling strenghts in the Ising Hamiltonian the same as the adjacency matrix. Show below are some relevant plots:
@@ -43,8 +43,42 @@ This is the trajectory of 16 spins in the simulation, with the same coupling as 
 This is the trajectory of 100 spins in the simulation, with the coupling set to a randomly generated max-cut problem of 100 nodes:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
 
-The simulation reached a cut-value of .... which is within ...% of the optimum.
+<p align = "center">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/100_spin_opt_cut_trajectory.png">
+</p>
+The simulation reached a cut-value of 2008 which is 99.46% of the optimum value of 2019, which was calculated using exact solvers. 
 
 
-We are at a stage of the experiment where the CIM is working for networks of 4 spins, but not for larger networks. We are fixing the problem currently. One of the key challenges of the experiment is to synchronize the generation and acquisition of voltage-pulses. Shown below is a plot of generated voltage (mention colour) and acquired voltage when we do a loopback emulation (We just connect the output and the input ports of the FPGA and simulate the intensity modulator's action in our C-code). The delay parameters in the C-code were adjusted to make sure that the waveforms match properly.
+We are at a stage of the experiment where the CIM is working for networks of 4 spins, but not for larger networks, as can be seen above in a plot of the trajectory of 16 spins, which oscillate instead of bifurcate. We are fixing the problem currently. 
+
+# Loop Back Emulation
+One of the key challenges of the experiment is to synchronize the generation and acquisition of voltage-pulses. Shown below is a plot of generated voltage (mention colour) and acquired voltage when we do a loopback emulation (We just connect the output and the input ports of the FPGA and simulate the intensity modulator's action in our C-code). The delay parameters in the C-code were adjusted to make sure that the waveforms match properly.
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
+
+<p align = "center">
+<img width = 900 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/loopback/synchronisation_30_spins_zoomed_in.png">
+</p>
+
+One interesting effect in the loop-back setup is that there is an attenuation caused by connections from the output to the input port. Fortunately, this is linear and can be corrected for. The following is a plot of x_in vs x_out. We can clearly see the linear nature of the line. When we fit a straight line through the data, was found the slope was 0.88. We use this value in the code to correct for this.
+
+<p align = "center">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/loopback/loopback_attenuation_m_0_884979_c_0_0541717.png">
+</p>
+
+# Simulation Usage
+The simulation code is called `simulation.py`. It is a `Python3` program which can be run with the following command line arguments
+1. -N Number of spins 
+2. -iter Number of iterations
+3. -run Number of runs per value of alpha and beta
+4. -a single value of alpha
+5. -b single value of beta
+6. -ua, -da, -sa Upper, lower limits and step size in a sweep of alpha (Replace 'a' by 'b', -ua becomes -ub and so on for a sweep of alpha)
+7. -J File name for input of adjacency matrix in the GSet format
+8. -traj Option for enabling the plotting of a trajectory
+9. -sol Option for finding the best cut in the given range of alpha and beta
+10. -bif Option for enabling the plotting of a bifurcation
+
+For other options, please refer the code.
+
+
+
