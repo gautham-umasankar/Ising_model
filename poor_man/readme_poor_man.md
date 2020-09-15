@@ -9,31 +9,36 @@ When the non-linear dynamics indicated by the equations below are followed, the 
 
 This is a bifurcation as seen in simulation:
 <p align = "center">
-<img width = 400 height = 300 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
 </p>
 <!---![Bifurcation as seen in simulation](https://github.com/gautham-umasankar/Ising_model/tree/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png)--->
 
 This is a bifurcation as seen in the experiment:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
 <p align = "center">
-<img width = 400 height = 300 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/bifurcation_100_spins_v2.png">
 </p>
-The trajectory of a single spin as seen in the simulation:
-<!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
-
-The trajectory of a single spin as seen in the experiment:
-
 
 Once the matrix J is initialized to the relevant adjacency matrix, the system naturally solves the maxcut problem, since the maxcut problem can be recast into the Ising Hamiltonian with the coupling strenghts in the Ising Hamiltonian the same as the adjacency matrix. Show below are some relevant plots:
 
-This is the trajectory of 2 spins in the experiment, when their coupling is set such that they anti-align:
+This is the trajectory of 2 spins in the simulation, when their coupling is set such that they anti-align. Note that beta is set to be negative, instead of setting the entries in the adjacency matrix to negative values.
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
+<p align = "center">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/2_spin_anti_align_trajectory.png">
+</p>
 
 This is the trajectory of 16 spins in the experiment, with the coupling set to a randomly generated max-cut problem of 16 nodes:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
+<p align = "center">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/experiment/16_spins/trajectory_alpha_1_5_beta_0_5.png">
+</p>
 
 This is the trajectory of 16 spins in the simulation, with the same coupling as above, when they reach the optimal solution of the above adjacency matrix:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
+
+<p align = "center">
+<img width = 600 height = 450 src = "https://github.com/gautham-umasankar/Ising_model/blob/master/poor_man/plots/simulation/16_spin_opt_cut_trajectory.png">
+</p>
 
 This is the trajectory of 100 spins in the simulation, with the coupling set to a randomly generated max-cut problem of 100 nodes:
 <!---![alt text](https://github.com/gautham-umasankar/Ising_model/poor_man/plots/....png)--->
