@@ -103,18 +103,13 @@ if(len(sys.argv)>1):
         #sys.argv.pop(i+1)
         i+=1
 
-plot_alpha = (min_alpha + max_alpha)/2
-plot_beta = (min_beta + max_beta)/2
-
-
-
 def modulator(x):
     return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/V_pi),2) #Check this equation later
 
 def feedback(x,alpha,beta,J):
-    
+    J = beta*J
     np.fill_diagonal(J,-alpha)
-    return (beta*J)@x
+    return (J)@x
 
 def notanh(x):
     for i,val in enumerate(x):
@@ -220,15 +215,17 @@ for alpha in Alpha:
             if(solver):
                 solutions.append([alpha,beta,run,cut_value(cut),cut])
 
-#print("J[81][99] = ",J[81][99])
-#print(solutions)
-
 if(bifurcation):
     plot2 = plt.figure(2)
-    plt.plot(Alpha,final_x[:,1::N_runs*len(Beta[:np.where(plot_beta<Beta)[0][0]])].T,"r.",markersize=1)
-    plt.title("Final value vs Alpha")
+    index_alpha = np.where(abs(Beta-plot_beta)<beta_step)[0][0]
+    plt.plot(Alpha,final_x[:,1::N_runs*len(Beta)].T,"r.",markersize=1.5)#[:np.where(plot_beta<Beta)[0][0]]
+    plt.title("Final value vs Alpha at beta = 0")
+    # Include plot against beta here. Need to choose an alpha for this
     plot3 = plt.figure(3)
-    plt.plot(Beta,final_x[:,1::N_runs*len(Beta)].T,"r.",markersize=1)
+    index_alpha = np.where(abs(Alpha-plot_alpha)<alpha_step)[0][0]
+    index_alpha *= N_runs*len(Beta)
+    plt.plot(Beta,final_x[:, index_alpha:index_alpha+N_runs*len(Beta):N_runs].T,"r.",markersize=1.5)
+    plt.title("Final value vs Beta at alpha = {}".format(plot_alpha))
     # # plt.plot(Alpha,pre_final_x[:,1:].T,"r.",markersize=0.5)
 
 if(solver):
