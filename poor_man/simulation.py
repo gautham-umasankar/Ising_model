@@ -4,13 +4,13 @@ import sys
 
 
 N = 3           # Number of spins
-N_iters = 100   # Number of iterations per run
+N_iters = 30   # Number of iterations per run
 N_runs = 10     # Number of runs 
 
 max_alpha = 2.0
 min_alpha = 0.5
 alpha_step = 0.1
-plot_alpha = (max_alpha + min_alpha)/2
+plot_alpha = 1.5
 
 max_beta = 2.0
 min_beta = 0.1
@@ -112,7 +112,7 @@ if(len(sys.argv)>1):
         i+=1
 
 def modulator(x):
-    return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/(2*V_pi)),2) #Check this equation later
+    return I0*pow(np.cos(x/V_pi + DC_bias*np.pi/(V_pi)),2) #Check this equation later
 
 def feedback(x,alpha,beta,J):
     J = beta*J
@@ -199,7 +199,7 @@ for alpha in Alpha:
 
                 # print(x_in)
                 # The state value
-                x_k = scaling*(x_in-offset)
+                x_k = (V_pi)*((1/I0)*x_in-offset)
 
                 # print("x_k = ",x_k)
                 i += 1
