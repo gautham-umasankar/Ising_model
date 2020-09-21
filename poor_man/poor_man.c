@@ -29,9 +29,9 @@ float BETA_MAX = 0.5;
 float BETA_MIN = 0.5;
 float BETA_STEP = 0.1;
 
-float offset = 0.04;
-float sig_f = 0.025;
-float scale = 20;
+float offset = 0.5;
+float sig_f = 0.04;
+float scale = 1;
 
 void gen_noise();
 void read_J();
@@ -89,7 +89,6 @@ void read_J()
         J[row-1][column-1] = value;
 	J[column-1][row-1] = value;
     }
-    printf("Done reading.\n");
     fclose(j_file);
 }
 
@@ -174,7 +173,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         }
         
 	    // Remove in lab
-        //value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
+        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
 	    //printf("Value = %f\n", value);
         //next[i] = 0.01*n;
 
@@ -241,21 +240,19 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i=0;i<buff_size;i+=p_step)
     {
-	    printf("x_out[%d]= %f \n",i,x_out[i]);
+	    // printf("x_out[%d]= %f \n",i,x_out[i]);
     }
 
     for(i = 0; i < buff_size; i+=p_step)
     {
-	    printf("x_in[%d] = %f \n",i,x_in[i]);
+	    // printf("x_in[%d] = %f \n",i,x_in[i]);
     }
 
     for(i = 0;i < N_spins; i++)
     {
 	    int index = (2*i+1)*buff_per_spin/2;
-	    printf("Index = %d \n",index);
-            x_k[i] = x_in[index];
-	    x_k[i] -= offset;
-	    x_k[i] *= scale;
+	    // printf("Index = %d \n",index);
+            x_k[i] = scale*x_in[index]-offset;
     }
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
@@ -312,7 +309,6 @@ int main (int argc, char **argv)
 
     fprintf(fp, "#%d\n",10);
     fprintf(fp2, "#%s\n", comment);
-    fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
     printf("%s\n", comment);
 
     if(argc > 1)
@@ -449,7 +445,7 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
-		        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
+	        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
                 free(x_k);
                 x_k = (float *)calloc(N_spins, sizeof(float));
             }
