@@ -38,13 +38,11 @@ void read_J();
 void feedback(float *, float, float);
 void single_iteration(float, float, int, int);
 float cut_value();
-double correlation(int);
-int shift();
 
 // x_in stores the input
-float *x_in;
+volatile float *x_in;
 float *x_k;
-float *x_out;
+volatile float *x_out;
 
 FILE *fp, *fp2, *j_file;
 float *noise;
@@ -98,52 +96,13 @@ void feedback(float *fb, float alpha, float beta)
     for(int i = 0;i < N_spins;i++)
     {
         for(int j = 1;j < N_spins;j++)
-	    {
+	{
             fb[i] += J[i][(i+j)%N_spins]*x_k[(j+i)%N_spins];
-	    }
-	    fb[i] *= beta;
+	}
+	fb[i] *= beta;
         fb[i] += alpha*x_k[i];
     }
 }
-
-double correlation(int shift)
-{
-    double cor = 0.0;
-    double norm_out = 0.0, norm_in = 0.0;
-    float *x_in_shifted = calloc(BUFFER_SIZE, sizeof(float));
-    if(shift > 0)
-    {
-        for(int i=shift;i<BUFFER_SIZE;i++)
-            x_in_shifted[i] = x_in[i-shift];
-    }
-    else if(shift <= 0)
-    {
-        for(int i=0;i<BUFFER_SIZE+shift;i++)
-            x_in_shifted[i] = x_in[i-shift];
-    }
-    for(int i = 0;i < BUFFER_SIZE; i++)
-    {
-        cor += x_out[i]*x_in_shifted[i];
-        norm_out += x_out[i]*x_out[i];
-        norm_in += x_in_shifted[i]*x_in_shifted[i];
-    }
-    cor /= sqrt((norm_out*norm_in));
-    return cor;
-}
-
-int find_shift()
-{
-    int shift = -2*buff_per_spin;
-    double cor = 0.0;
-    int best_shift = 0;
-    for(;shift < 2*buff_per_spin+1; shift++)
-    {
-        if(correlation(shift) > cor)
-            best_shift = shift;
-    }
-    return best_shift;
-}
-
 
 void single_iteration(float alpha, float beta, int s,int iteration)
 {
@@ -160,8 +119,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     {
         n = rand()%N_noise;
         float value = -feedback_terms[i] + noise[n];
-        //printf("feedback_terms[%d] = %f noise = %f value = %f\n",i,feedback_terms[i],noise[n],value); 
-	    //printf("Value after cos is: %f \n",value);
+        printf("feedback_terms[%d] = %f noise = %f value = %f\n",i,feedback_terms[i],noise[n],value); 
+	printf("Value after cos is: %f \n",value);
 
         //Threshold the output
         if(value >= 1.0)
@@ -173,9 +132,9 @@ void single_iteration(float alpha, float beta, int s,int iteration)
             value = -1.0;
         }
         
-	    // Remove in lab
-        //value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
-	    //printf("Value = %f\n", value);
+	// Remove in lab
+        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
+	//printf("Value = %f\n", value);
         //next[i] = 0.01*n;
 
         // x_out an array that will store the output
@@ -221,7 +180,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     do
     {
         rp_AcqGetTriggerState(&state);
-	    rp_AcqGetWritePointer(&pos);
+	rp_AcqGetWritePointer(&pos);
         //printf("Pos = %d\n", pos);
     }while(state == RP_TRIG_STATE_TRIGGERED);
 	
@@ -269,8 +228,6 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         fprintf(fp2," %f",x_k[i]);
     }
     fprintf(fp2,"\n");
-    // int shift = find_shift();
-    // printf("Best correlation value received was for shift of = %d",shift);
 }
 
 float cut_value()
@@ -292,28 +249,11 @@ float cut_value()
 
 int main (int argc, char **argv) 
 {
-    system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
-    struct tm *timenow;
-    char sync_filename[40], traj_filename[50];
 
-    time_t now = time(NULL);
-    timenow = localtime(&now);
-    strftime(sync_filename, sizeof(sync_filename), "./data/xout_xin_%d_%m_%Y_%H_%M_%S.csv", timenow);
-    strftime(traj_filename, sizeof(traj_filename), "./data/trajectory_%d_%m_%Y_%H_%M_%S.csv", timenow);
-
-    char comment[100];
-    printf("Enter comment on file: ");
-    fgets(comment, sizeof(comment), stdin);  // read string
-
-    fp = fopen(sync_filename,"w");
-    fp2 = fopen(traj_filename,"w");
-    j_file = fopen("./Maxcut_instances/J_3spins.txt", "r");
-	printf("Opened all the files.\n");
-
-    fprintf(fp, "#%d\n",10);
-    fprintf(fp2, "#%s\n", comment);
-    fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
-    printf("%s\n", comment);
+    fp = fopen("data_3spins.csv","w");
+    fp2 = fopen("data_cut_3spins.csv","w");
+    // j_file = fopen("./Maxcut_instances/pw01_50.txt","r");
+    j_file = fopen("./J_3spins.txt", "r");
 
     if(argc > 1)
     {
@@ -412,16 +352,11 @@ int main (int argc, char **argv)
                 printf("J[%d][%d]=%f\n",i,j,J[i][j]);
 	    }
     }
-    printf("Done printing J.\n");
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
         fprintf(stderr, "Red Pitaya API init failed!\n");
         return EXIT_FAILURE;
-    }
-    else
-    {
-	printf("Initialisation of RedPitaya API done!\n");
     }
 
     float alpha;
