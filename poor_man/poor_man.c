@@ -32,6 +32,7 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
+float att = 0.9;
 
 void gen_noise();
 void read_J();
@@ -100,7 +101,7 @@ void feedback(float *fb, float alpha, float beta)
 	    {
             fb[i] += J[i][(i+j)%N_spins]*x_k[(j+i)%N_spins];
 	    }
-	    fb[i] *= beta;
+	    fb[i] *= -beta;
         fb[i] += alpha*x_k[i];
     }
 }
@@ -252,8 +253,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     {
 	    int index = (2*i+1)*buff_per_spin/2;
 	    // printf("Index = %d \n",index);
-            x_k[i] = scale*x_in[index]-offset;
+            x_k[i] = (scale*x_in[index]/att)-offset;
+	    // printf("%f  ", x_k[i]);
     }
+    // printf("\n");
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
@@ -404,7 +407,7 @@ int main (int argc, char **argv)
     {
         for(int j = 0;j<N_spins;j++)
 	    {
-            if(J[i][j]>0)
+            if(J[i][j] != 0)
                 printf("J[%d][%d]=%f\n",i,j,J[i][j]);
 	    }
     }
