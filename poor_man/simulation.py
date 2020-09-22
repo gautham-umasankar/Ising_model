@@ -164,7 +164,7 @@ if(J_file):
         J[r][c] = w
         J[c][r] = w        
     f.close()
-    #print(J)
+    print(J)
 
 #Create Alpha and Beta arrays
 Alpha = np.arange(min_alpha,max_alpha,alpha_step)
