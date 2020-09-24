@@ -63,6 +63,7 @@ elif(opt == "r"):
 
 f = open("./../Maxcut_instances/"+opt+"_"+str(N)+".txt", "w")
 f.write(str(N))
+f.write(" 1")
 f.write("\n")
 for i in range(N):
     for j in range(i+1,N):
