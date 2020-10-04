@@ -12,7 +12,7 @@
 #define BUFFER_SIZE 16*1024
 
 int p_step = 1000;
-int trig_delay = 16384+3900;
+int trig_delay = 16384+3900; // + 500
 
 int N_spins = 1;
 int N_iters = 30;
@@ -47,7 +47,7 @@ float *x_in;
 float *x_k;
 float *x_out;
 
-FILE *fp, *fp2, *j_file;
+FILE *fp, *fp2, *fp3, *j_file;
 float *noise;
 float **J;
 
@@ -174,10 +174,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         }
         
 	    // Remove in lab
-        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
+        //value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
 	    //printf("Value = %f\n", value);
-        //next[i] = 0.01*n;
-
+        value = 0.01*n;
+	
         // x_out an array that will store the output
     
         // Store the value in the buffer to be given as output for the next
@@ -196,7 +196,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // One waveform per burst
     rp_GenBurstCount(RP_CH_2, 1);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, 3);
+    rp_GenBurstRepetitions(RP_CH_2, 2);
     // Burst period. Will be dependent on computation time
     //rp_GenBurstPeriod(RP_CH_2, 130000);
 
@@ -237,7 +237,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //rp_GenOutDisable(RP_CH_2);
     //rp_GenReset();
 
-    trig_delay = 3900+16384+1200;
+    trig_delay = 3900+1200;
 
     for(i=0;i<buff_size;i+=p_step)
     {
@@ -262,7 +262,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i=0;i<buff_size;i++)
     {
-	    fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]);
+	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]/att);
     }
     for(i = 0;i < N_spins; i++)
     {
@@ -294,24 +294,27 @@ int main (int argc, char **argv)
 {
     system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
     struct tm *timenow;
-    char sync_filename[40], traj_filename[50];
+    char sync_filename[40], traj_filename[50], cut_filename[40];
 
     time_t now = time(NULL);
     timenow = localtime(&now);
     strftime(sync_filename, sizeof(sync_filename), "./data/xout_xin_%d_%m_%Y_%H_%M_%S.csv", timenow);
     strftime(traj_filename, sizeof(traj_filename), "./data/trajectory_%d_%m_%Y_%H_%M_%S.csv", timenow);
-
+    strftime(cut_filename, sizeof(cut_filename), "./data/cut_%d_%m_%Y_%H_%M_%S.csv", timenow);
+ 
     char comment[100];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin);  // read string
 
     fp = fopen(sync_filename,"w");
     fp2 = fopen(traj_filename,"w");
+    fp3 = fopen(cut_filename,"w");
     j_file = fopen("./Maxcut_instances/J_3spins.txt", "r");
-	printf("Opened all the files.\n");
-
-    fprintf(fp, "#%d\n",10);
+    
+    fprintf(fp, "#%s\n", comment);
     fprintf(fp2, "#%s\n", comment);
+    fprintf(fp3, "#%s\n", comment);
+    fprintf(fp3, "#Alpha Beta Cut\n");
     printf("%s\n", comment);
 
     if(argc > 1)
@@ -321,6 +324,9 @@ int main (int argc, char **argv)
             char opt = argv[a][1];
             switch(opt)
             {
+		case 'N': //Number of spins
+			N_spins = atoi(argv[++a]);
+			break;
                 case 'i': // Number of iterations per spin
                         N_iters =atoi(argv[++a]);
                         break;
@@ -356,6 +362,9 @@ int main (int argc, char **argv)
                 case 'j': //Change value of J
                         fclose(j_file); 
                         j_file = fopen(argv[++a],"r");
+ 			char line_for_N[20];
+			fgets(line_for_N, 20, j_file);
+                        sscanf(line_for_N, "%d %*d", &N_spins);
                         break;
                 case 'r': // Number of spins/runs
                         N_runs = atoi(argv[++a]);
@@ -383,11 +392,7 @@ int main (int argc, char **argv)
     N_iters= %d\nN_runs= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,\
     offset,N_iters,N_runs,buff_size);
 
-    char line_for_N[20];
-    fgets(line_for_N, 20, j_file);
-    // puts(line_for_N);
-    sscanf(line_for_N, "%d %*d", &N_spins);
-
+   // puts(line_for_N);
     x_out = (float *)calloc(buff_size, sizeof(float));
     x_in = (float *)calloc(buff_size, sizeof(float));
     noise = (float *)calloc(N_noise, sizeof(float));
@@ -407,11 +412,11 @@ int main (int argc, char **argv)
     {
         for(int j = 0;j<N_spins;j++)
 	    {
-            if(J[i][j] != 0)
-                printf("J[%d][%d]=%f\n",i,j,J[i][j]);
+            //if(J[i][j] != 0)
+                //printf("J[%d][%d]=%f\n",i,j,J[i][j]);
 	    }
     }
-    printf("Done printing J.\n");
+    //printf("Done printing J.\n");
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
@@ -420,12 +425,12 @@ int main (int argc, char **argv)
     }
     else
     {
-	printf("Initialisation of RedPitaya API done!\n");
+	//printf("Initialisation of RedPitaya API done!\n");
     }
 
     float alpha;
     float beta;
-
+ 
     rp_AcqReset();
     rp_AcqSetDecimation(1);
 
@@ -448,7 +453,9 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
-	        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
+		float cut_store = cut_value();
+	        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_store);
+		fprintf(fp3,"%f %f %f\n",alpha,beta,cut_store);
                 free(x_k);
                 x_k = (float *)calloc(N_spins, sizeof(float));
             }
@@ -461,5 +468,7 @@ int main (int argc, char **argv)
     free(noise);
     rp_Release();
     fclose(fp);
+    fclose(fp2);
+    fclose(fp3);
     return EXIT_SUCCESS;
 }

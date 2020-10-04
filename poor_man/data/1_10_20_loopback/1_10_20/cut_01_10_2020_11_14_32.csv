@@ -1,0 +1,3 @@
+#Reduced the initial delay to get a better sync for the first iteration. Rest of the parameters are 
+#Alpha Beta Cut
+0.800000 0.000000 2.000000
