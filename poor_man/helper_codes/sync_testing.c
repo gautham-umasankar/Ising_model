@@ -15,6 +15,9 @@ int p_step = 1000;
 int trig_delay;
 int t1 =  = 16384+3900;
 int t2 = 3900+16384+1200;
+int breps = 3;
+int bcounts = 1;
+float freq = 7690.0;
 
 int N_spins = 1;
 int N_iters = 30;
@@ -85,14 +88,14 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // Enable burst mode
     rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
     // One waveform per burst
-    rp_GenBurstCount(RP_CH_2, 1);
+    rp_GenBurstCount(RP_CH_2, bcounts);
     // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, 3);
+    rp_GenBurstRepetitions(RP_CH_2, breps);
     // Burst period. Will be dependent on computation time
     //rp_GenBurstPeriod(RP_CH_2, 130000);
 
     //rp_GenAmp(RP_CH_2, 1.0);
-    rp_GenFreq(RP_CH_2, 7690.0);
+    rp_GenFreq(RP_CH_2, freq);
 
     rp_AcqReset();
     // Start acquisition
@@ -232,11 +235,22 @@ int main (int argc, char **argv)
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
 			            break;
+                case 'F':
+                        freq = atof(argv[++a]);
+                        break;
+                case 'B':
+                        if(argv[a][2] == 'c')
+                            bcounts = atoi(argv[++a]);
+                        else
+                            breps = atof(argv[++a]);
+                        break;
+                        
                 case 'T': //trig_delay
                         if(argv[a][2] == '1')
                             t1 = atof(argv[++a]);
                         else
                             t2 = atof(argv[++a]);
+                        break;
                         
                 default:printf("Invalid option: %c\n",opt);
 			            return 0;
