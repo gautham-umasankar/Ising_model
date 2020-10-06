@@ -13,7 +13,7 @@
 
 int p_step = 1000;
 int trig_delay;
-int t1 =  = 16384+3900;
+int t1 = 16384+3900;
 int t2 = 3900+16384+1200;
 int breps = 3;
 int bcounts = 1;
@@ -57,11 +57,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i = 0;i < N_spins;i++)
     {
+	
         n = rand()%N_noise;
-        next[i] = 0.01*n;
-
+        //next[i] = 0.01*n;
+	
         //Threshold the output
-        if(value >= 1.0)
+        /*
+	if(value >= 1.0)
         {
             value = 1.0;
         }
@@ -69,33 +71,29 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         {
             value = -1.0;
         }
-        
+
+        value = 0.01*n;*/
+
 	    // printf("Value = %f\n", value);
 
         // x_out an array that will store the output
     
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
-        for(int j = i*buff_per_spin;j < (i+1)*(buff_per_spin);j++)
+        printf("Value = %f\n", 0.01*n);
+	for(int j = i*buff_per_spin;j < (i+1)*(buff_per_spin);j++)
         {
-            x_out[j] = value;
+		if(i == 0)
+			x_out[j] = -0.6;
+		else
+			x_out[j] = 0.5;
         }
     }
 
     // Send the output
-    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size); //Does it start generating here itself?
-    // Enable burst mode
-    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
-    // One waveform per burst
-    rp_GenBurstCount(RP_CH_2, bcounts);
-    // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, breps);
-    // Burst period. Will be dependent on computation time
-    //rp_GenBurstPeriod(RP_CH_2, 130000);
+    rp_GenOutEnable(RP_CH_2);
 
-    //rp_GenAmp(RP_CH_2, 1.0);
-    rp_GenFreq(RP_CH_2, freq);
 
     rp_AcqReset();
     // Start acquisition
@@ -128,7 +126,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     rp_AcqStop();
 
     //Reset the output to zero
-    //rp_GenOutDisable(RP_CH_2);
+    rp_GenOutDisable(RP_CH_2);
     //rp_GenReset();
 
     trig_delay = t2;
@@ -155,7 +153,7 @@ int main (int argc, char **argv)
 {
     system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
     struct tm *timenow;
-    char sync_filename[40], traj_filename[50];
+    char sync_filename[60], traj_filename[60];
 
     time_t now = time(NULL);
     timenow = localtime(&now);
@@ -167,7 +165,7 @@ int main (int argc, char **argv)
 
     fp = fopen(sync_filename,"w");
 
-    fprintf(fp, "#%d\n",10);
+    fprintf(fp, "#%s\n",comment);
     printf("%s\n", comment);
 
     if(argc > 1)
@@ -280,10 +278,28 @@ int main (int argc, char **argv)
     rp_AcqReset();
     rp_AcqSetDecimation(1);
 
-    rp_GenOutEnable(RP_CH_2);
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
+    // Send the output
+    // Enable burst mode
+    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
+    
+    // One waveform per burst
+    rp_GenBurstCount(RP_CH_2, bcounts);
+   
+     // Number of bursts
+    rp_GenBurstRepetitions(RP_CH_2, breps);
+   
+    // Burst period. Will be dependent on computation time
+    //rp_GenBurstPeriod(RP_CH_2, 130000);
+
+    //rp_GenAmp(RP_CH_2, 1.0);
+    rp_GenFreq(RP_CH_2, freq);
+    
+   
 
     buff_per_spin = (int)BUFFER_SIZE/N_spins;
-   
+    trig_delay = t1; 
+    srand(time(0));
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
         for(beta = BETA_MIN;beta <= BETA_MAX;beta += BETA_STEP)
@@ -294,7 +310,7 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
-	        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
+	        //printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_value());
             }
         }
     }
