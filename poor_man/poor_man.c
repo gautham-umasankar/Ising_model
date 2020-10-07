@@ -13,6 +13,11 @@
 
 int p_step = 1000;
 int trig_delay = 16384+3900; // + 500
+int t1 = 7830;	//16384+3900;
+int t2 = 8130;	//3900+16384+1200;
+int breps = 1; 	// 3
+int bcounts = 1;
+float freq = 7630.0;
 
 int N_spins = 1;
 int N_iters = 30;
@@ -151,7 +156,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     //compute x_out
 
-    // Multiiply by alpha and add noise
+    // Multiiply by alpha aOne waveform per burstnd add noise
     float *feedback_terms = (float *)calloc(N_spins, sizeof(float)); 
 
     feedback(feedback_terms, alpha, beta);
@@ -174,9 +179,9 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         }
         
 	    // Remove in lab
-        //value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
+        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
 	    //printf("Value = %f\n", value);
-        value = 0.01*n;
+        //value = 0.01*n;
 	
         // x_out an array that will store the output
     
@@ -187,76 +192,54 @@ void single_iteration(float alpha, float beta, int s,int iteration)
             x_out[j] = value;
         }
     }
-
-    // Send the output
-    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
-    rp_GenArbWaveform(RP_CH_2, x_out, buff_size); //Does it start generating here itself?
-    // Enable burst mode
-    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
-    // One waveform per burst
-    rp_GenBurstCount(RP_CH_2, 1);
-    // Number of bursts
-    rp_GenBurstRepetitions(RP_CH_2, 2);
-    // Burst period. Will be dependent on computation time
-    //rp_GenBurstPeriod(RP_CH_2, 130000);
-
-    //rp_GenAmp(RP_CH_2, 1.0);
-    rp_GenFreq(RP_CH_2, 7690.0);
-
+    
+    // Fill DAC buffer
+    rp_GenArbWaveform(RP_CH_2, x_out, buff_size); 
+    
+    //Reset Acquisition to Defaults
     rp_AcqReset();
-    // Start acquisition
+    
+
+    // Configure acquisition
     rp_AcqSetTriggerDelay(trig_delay);
+    
+    //Start Acquisition
     rp_AcqStart();
+
+    //Start DAC Operation
+    rp_GenOutEnable(RP_CH_2);
 
     // Trigger immediately
     rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
-    int pos;
-    rp_AcqGetWritePointerAtTrig(&pos);
-
-    //printf("Pos right after trigger now:%d\n",pos);
+    
 
     rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
 
+    i = 0;
     // Wait for buffer to get full after Trigger.
     do
     {
-        rp_AcqGetTriggerState(&state);
-	    rp_AcqGetWritePointer(&pos);
-        //printf("Pos = %d\n", pos);
-    }while(state == RP_TRIG_STATE_TRIGGERED);
+	    rp_AcqGetTriggerState(&state);
+	}while(state == RP_TRIG_STATE_TRIGGERED);
 	
-    rp_AcqGetWritePointer(&pos);
-    //printf("Pos = %d\n",pos);
-    // Get data into buff
+    //Get data from buffer to code
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
 
     // Stop acquisition
     rp_AcqStop();
+    
+    //Disable output
+    rp_GenOutDisable(RP_CH_2);
 
-    //Reset the output to zero
-    //rp_GenOutDisable(RP_CH_2);
-    //rp_GenReset();
+    //Set new trigger delay
+    trig_delay = t2;
 
-    trig_delay = 3900+1200;
-
-    for(i=0;i<buff_size;i+=p_step)
-    {
-	    // printf("x_out[%d]= %f \n",i,x_out[i]);
-    }
-
-    for(i = 0; i < buff_size; i+=p_step)
-    {
-	    // printf("x_in[%d] = %f \n",i,x_in[i]);
-    }
 
     for(i = 0;i < N_spins; i++)
     {
 	    int index = (2*i+1)*buff_per_spin/2;
-	    // printf("Index = %d \n",index);
-            x_k[i] = (scale*x_in[index]/att)-offset;
-	    // printf("%f  ", x_k[i]);
+        x_k[i] = (scale*x_in[index]/att)-offset;
     }
-    // printf("\n");
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
@@ -269,8 +252,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         fprintf(fp2," %f",x_k[i]);
     }
     fprintf(fp2,"\n");
-    // int shift = find_shift();
-    // printf("Best correlation value received was for shift of = %d",shift);
+
 }
 
 float cut_value()
@@ -294,7 +276,7 @@ int main (int argc, char **argv)
 {
     system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
     struct tm *timenow;
-    char sync_filename[40], traj_filename[50], cut_filename[40];
+    char sync_filename[60], traj_filename[60], cut_filename[60];
 
     time_t now = time(NULL);
     timenow = localtime(&now);
@@ -302,7 +284,7 @@ int main (int argc, char **argv)
     strftime(traj_filename, sizeof(traj_filename), "./data/trajectory_%d_%m_%Y_%H_%M_%S.csv", timenow);
     strftime(cut_filename, sizeof(cut_filename), "./data/cut_%d_%m_%Y_%H_%M_%S.csv", timenow);
  
-    char comment[100];
+    char comment[150];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin);  // read string
 
@@ -324,9 +306,9 @@ int main (int argc, char **argv)
             char opt = argv[a][1];
             switch(opt)
             {
-		case 'N': //Number of spins
-			N_spins = atoi(argv[++a]);
-			break;
+                case 'N': //Number of spins
+                        N_spins = atoi(argv[++a]);
+                        break;
                 case 'i': // Number of iterations per spin
                         N_iters =atoi(argv[++a]);
                         break;
@@ -362,8 +344,8 @@ int main (int argc, char **argv)
                 case 'j': //Change value of J
                         fclose(j_file); 
                         j_file = fopen(argv[++a],"r");
- 			char line_for_N[20];
-			fgets(line_for_N, 20, j_file);
+ 		        	    char line_for_N[20];
+			            fgets(line_for_N, 20, j_file);
                         sscanf(line_for_N, "%d %*d", &N_spins);
                         break;
                 case 'r': // Number of spins/runs
@@ -382,21 +364,34 @@ int main (int argc, char **argv)
                         fclose(fp);
                         fp = fopen(argv[++a],"w");
 			            break;
+                case 'F':
+                        freq = atof(argv[++a]);
+                        break;
+                case 'B':
+                        if(argv[a][2] == 'c')
+                            bcounts = atoi(argv[++a]);
+                        else
+                            breps = atof(argv[++a]);
+                        break;
+                case 'T': //trig_delay
+                        if(argv[a][2] == '1')
+                            t1 = atof(argv[++a]);
+                        else
+                            t2 = atof(argv[++a]);
+                        break;
+                
                 default:printf("Invalid option: %c\n",opt);
 			            return 0;
             }
         }
     }
 
-    //printf("Alpha MAx = %f\nAlpha min= %f\nalpha step =  %f\n offset=%f\n   \
-    N_iters= %d\nN_runs= %d\n buff_size=%d\n",ALPHA_MAX,ALPHA_MIN, ALPHA_STEP,\
-    offset,N_iters,N_runs,buff_size);
-
-   // puts(line_for_N);
+   
     x_out = (float *)calloc(buff_size, sizeof(float));
     x_in = (float *)calloc(buff_size, sizeof(float));
     noise = (float *)calloc(N_noise, sizeof(float));
-
+    x_k = (float *)calloc(N_spins, sizeof(float));
+    
     int i,s;
 
     J = (float **)calloc(N_spins, sizeof(float *));
@@ -407,16 +402,7 @@ int main (int argc, char **argv)
 
     read_J();
 
-    x_k = (float *)calloc(N_spins, sizeof(float));
-    for(i = 0;i< N_spins;i++)
-    {
-        for(int j = 0;j<N_spins;j++)
-	    {
-            //if(J[i][j] != 0)
-                //printf("J[%d][%d]=%f\n",i,j,J[i][j]);
-	    }
-    }
-    //printf("Done printing J.\n");
+    
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
@@ -425,17 +411,35 @@ int main (int argc, char **argv)
     }
     else
     {
-	//printf("Initialisation of RedPitaya API done!\n");
+	    printf("Initialisation of RedPitaya API done!\n");
     }
 
     float alpha;
     float beta;
  
+    //Configure ADC
     rp_AcqReset();
     rp_AcqSetDecimation(1);
 
-    rp_GenOutEnable(RP_CH_2);
-
+    //Configure DAC
+    
+    //Set arbitrary waveform
+    rp_GenWaveform(RP_CH_2, RP_WAVEFORM_ARBITRARY);
+    
+    // Enable burst mode
+    rp_GenMode(RP_CH_2, RP_GEN_MODE_BURST); 
+    
+    // set burst count
+    rp_GenBurstCount(RP_CH_2, bcounts);
+   
+     // set burst repetitions
+    rp_GenBurstRepetitions(RP_CH_2, breps);
+   
+    //Set Generation Frequency
+    rp_GenFreq(RP_CH_2, freq);
+    
+    
+    //Adjust this later
     buff_per_spin = (int)BUFFER_SIZE/N_spins;
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
@@ -453,9 +457,9 @@ int main (int argc, char **argv)
                 {
                     single_iteration(alpha, beta, s, i);
                 }
-		float cut_store = cut_value();
-	        printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_store);
-		fprintf(fp3,"%f %f %f\n",alpha,beta,cut_store);
+		        float cut_store = cut_value();
+	            printf("Alpha = %f Beta = %f The cut value is: %f\n",alpha,beta, cut_store);
+		        fprintf(fp3,"%f %f %f\n",alpha,beta,cut_store);
                 free(x_k);
                 x_k = (float *)calloc(N_spins, sizeof(float));
             }

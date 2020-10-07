@@ -34,11 +34,15 @@ iters = int(len(lines)/buff_size)
 
 x_in = np.array([float(i.split()[3]) for i in lines])
 x_out = np.array([float(i.split()[2]) for i in lines])
-
+correlations = []
 for i in range(iters):
     fig = plt.figure(i)
     corr = np.array([sum(x_in[i*buff_size:(i+1)*buff_size]*np.roll(x_out[i*buff_size:(i+1)*buff_size],shift)) for shift in range(-60,60,1)])/(sum(x_out[i*buff_size:(i+1)*buff_size]))
+    correlations.append(np.argmax(corr))
     plt.title("Iteration: {}".format(i+1))
     plt.plot(shifts,corr)
 
 plt.show()
+
+for i,corr in enumerate(correlations):
+    print("Iteration {} shift = {}".format(i,corr))
