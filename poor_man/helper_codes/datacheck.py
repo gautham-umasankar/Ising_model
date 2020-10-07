@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
+from correlation import correlation_calc
 
 data_file = ""
 N = 10
@@ -17,6 +18,9 @@ if(len(sys.argv)>1):
             N = int(sys.argv[i+1])
         elif(opt == '-j'):
             J_file = str(sys.argv[i+1])    
+        elif(opt == "-c"):
+            c = correlation_calc(str(sys.argv[i+1]))
+            c.calc()
         i+=1
         
 
