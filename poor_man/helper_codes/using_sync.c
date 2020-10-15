@@ -52,7 +52,7 @@ float *noise;
 
 int find_shift(float value, int exp_ind)
 {
-    return (exp_ind - int(value*191));
+    return (exp_ind -  (int)(value*191));
 }
 
 void single_iteration(float alpha, float beta, int s,int iteration)
@@ -62,7 +62,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //compute x_out
 
     for(i = 0;i < 192; i++)
-        x_out[i] = i/191;
+    {
+	float t = i/192;
+        x_out[i] = t;
+    }
 
     for(i = 0;i <= N_spins;i++)
     {
@@ -89,7 +92,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
-        printf("Value = %f\n", 0.01*n);
+        //printf("Value = %f\n", 0.01*n);
 	    for(int j = 192 + i*buff_per_spin;j < (i+1)*(buff_per_spin) + 192;j++)
         {
 		    x_out[j] = 0.01*n;
@@ -104,7 +107,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size); //Does it start generating here itself?
     rp_AcqReset();
     rp_AcqGetWritePointer(&pos1);
-    printf("Pos at the start after AcqReset() = %d\n",pos1);
+    // printf("Pos at the start after AcqReset() = %d\n",pos1);
     // Start acquisition
     rp_AcqSetTriggerDelay(trig_delay);
     rp_AcqStart();
@@ -132,19 +135,19 @@ void single_iteration(float alpha, float beta, int s,int iteration)
  		//printf("i = %d pos_previous = %d pos_current = %d\n",i,pos1,pos2);
 
 	//pos1 = pos2;
-        printf("i = %d Pos = %d\n",i, pos2);
-    	i+=1;
+        // printf("i = %d Pos = %d\n",i, pos2);
+    	// i+=1;
     }while(state == RP_TRIG_STATE_TRIGGERED);
 	
     rp_AcqGetWritePointer(&pos1);
-    printf("Pos after do while = %d\n",pos1);
+    // printf("Pos after do while = %d\n",pos1);
     // Get data into buff
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
 
     // Stop acquisition
     rp_AcqStop();
     rp_AcqGetWritePointer(&pos1);
-    printf("Pos after acqstop() = %d\n",pos1);
+    // printf("Pos after acqstop() = %d\n",pos1);
  
     //Reset the output to zero
     rp_GenOutDisable(RP_CH_2);
@@ -175,7 +178,7 @@ int main (int argc, char **argv)
 {
     system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
     struct tm *timenow;
-    char sync_filename[60], traj_filename[60];
+    char sync_filename[60];
 
     time_t now = time(NULL);
     timenow = localtime(&now);
@@ -184,7 +187,7 @@ int main (int argc, char **argv)
     char comment[100];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin);  // read string
-
+    printf("Comment entered:");
     fp = fopen(sync_filename,"w");
 
     fprintf(fp, "#%s\n",comment);
@@ -282,7 +285,7 @@ int main (int argc, char **argv)
     x_in = (float *)calloc(buff_size, sizeof(float));
 
     int i,s;
-
+    printf("Initialising RP.");
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
