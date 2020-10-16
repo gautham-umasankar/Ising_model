@@ -44,11 +44,9 @@ int find_shift(float, int);
 
 // x_in stores the input
 float *x_in;
-float *x_k;
 float *x_out;
 
-FILE *fp, *fp2, *j_file;
-float *noise;
+FILE *fp, *j_file;
 
 int find_shift(float value, int exp_ind)
 {
@@ -63,7 +61,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i = 0;i < 192; i++)
     {
-	float t = i/192;
+	float t = ((float)i)/191;
+        //printf("Xout Index = %d value = %f\n", i, t);
         x_out[i] = t;
     }
 
@@ -95,12 +94,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
         //printf("Value = %f\n", 0.01*n);
 	    for(int j = 192 + i*buff_per_spin;j < (i+1)*(buff_per_spin) + 192;j++)
         {
-		    x_out[j] = 0.01*n;
+		x_out[j] = 0.01*n;
+		//printf("Value=%f and index=%d\n", x_out[j],j);
         }
     }
 
     for(i = 16192;i < BUFFER_SIZE; i++)
-        x_out[i] = (i-16192)/192;
+        x_out[i] = ((float)(16383-i))/191;
     
     int pos1,pos2;
     // Send the output
@@ -157,7 +157,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     // for(i=0;i<buff_size;i+=p_step)
     // {
-	//     // printf("x_out[%d]= %f \n",i,x_out[i]);
+		//printf("x_out[%d]= %f \n",i,x_out[i]);
     // }
 
     // for(i = 0; i < buff_size; i+=p_step)
@@ -167,22 +167,22 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i=0;i<buff_size;i++)
     {
-	    fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]/0.92);
+	   fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]/0.92);
     }
     i = 92;
-    int shift = find_shift(x_in[i], i);
-    printf("Shift = %d",shift);
+    int shift = find_shift(x_in[i]/0.92, i);
+    printf("Iteraion = %d , Shift = %d\n",iteration, shift);
 }
 
 int main (int argc, char **argv) 
 {
     system ("cat /opt/redpitaya/fpga/fpga_0.94.bit > /dev/xdevcfg");
     struct tm *timenow;
-    char sync_filename[60];
+    char sync_filename[] = "xout_xin_using_sync.csv";
 
-    time_t now = time(NULL);
-    timenow = localtime(&now);
-    strftime(sync_filename, sizeof(sync_filename), "./../data/xout_xin_%d_%m_%Y_%H_%M_%S.csv", timenow);
+    //time_t now = time(NULL);
+    //timenow = localtime(&now);
+    //strftime(sync_filename, sizeof(sync_filename), "./../data/xout_xin_%d_%m_%Y_%H_%M_%S.csv", timenow);
 
     char comment[100];
     printf("Enter comment on file: ");
@@ -285,7 +285,6 @@ int main (int argc, char **argv)
     x_in = (float *)calloc(buff_size, sizeof(float));
 
     int i,s;
-    printf("Initialising RP.");
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
