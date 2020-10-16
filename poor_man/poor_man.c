@@ -45,7 +45,6 @@ void feedback(float *, float, float);
 void single_iteration(float, float, int, int);
 float cut_value();
 double correlation(int);
-int shift();
 int find_shift(float, int);
 
 // x_in stores the input
@@ -144,7 +143,7 @@ double correlation(int shift)
     return cor;
 }
 
-int find_shift()
+/*int find_shift()
 {
     int shift = -2*buff_per_spin;
     double cor = 0.0;
@@ -155,7 +154,7 @@ int find_shift()
             best_shift = shift;
     }
     return best_shift;
-}
+}*/
 
 
 void single_iteration(float alpha, float beta, int s,int iteration)
@@ -250,21 +249,26 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     //Set new trigger delay
     trig_delay = t2;
-
+    
+    int shift = find_shift(x_in[96]/att, 96);
 
     for(i = 0;i < N_spins; i++)
     {
-	    int index = (2*i+1)*buff_per_spin/2 + shift;
+	    int index = (2*i+1)*buff_per_spin/2 + shift + 192;
         x_k[i] = (scale*x_in[index]/att)-offset;
     }
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
-    int shift = find_shift(x_in[96]/att, 96);
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
     for(i=192;i<buff_size-192;i++)
     {
-	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+	   //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    }
+    for(i = 0; i< N_spins; i++)
+    {
+	int index = (2*i+1)*buff_per_spin/2 + shift + 192;
+    	fprintf(fp, "iter=%d %d %f %f\n",iteration,i,x_in[index],x_out[192 + i*buff_per_spin + ((int)0.5*buff_per_spin)]);  
     }
     for(i = 0;i < N_spins; i++)
     {
