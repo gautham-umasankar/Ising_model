@@ -37,7 +37,7 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
-float att = 0.9;
+float att = 0.92;
 
 void gen_noise();
 void read_J();
@@ -46,6 +46,7 @@ void single_iteration(float, float, int, int);
 float cut_value();
 double correlation(int);
 int shift();
+int find_shift(float, int);
 
 // x_in stores the input
 float *x_in;
@@ -55,6 +56,8 @@ float *x_out;
 FILE *fp, *fp2, *fp3, *j_file;
 float *noise;
 float **J;
+
+
 
 void gen_noise()
 {
@@ -78,6 +81,11 @@ void gen_noise()
 		noise[i] = (noise[i] - mu)/sig;
 		// printf("\nNoise %d = %f\n",i ,noise[i]);
 	}
+}
+
+int find_shift(float value, int exp_ind)
+{
+    return (exp_ind -  (int)(value*191));
 }
 
 void read_J()
@@ -154,7 +162,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 {
     int i, n;
 
-    //compute x_out
+    // Ramp in the beginning
+    for(i = 0;i < 192; i++)
+    {
+	    float t = ((float)i)/191;
+        //printf("Xout Index = %d value = %f\n", i, t);
+        x_out[i] = t;
+    }
 
     // Multiiply by alpha aOne waveform per burstnd add noise
     float *feedback_terms = (float *)calloc(N_spins, sizeof(float)); 
@@ -187,11 +201,14 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
-        for(int j = i*buff_per_spin;j < (i+1)*(buff_per_spin);j++)
+        for(int j = 192 + i*buff_per_spin;j < (i+1)*(buff_per_spin) + 192;j++)
         {
             x_out[j] = value;
         }
     }
+
+    for(i = 16192;i < BUFFER_SIZE; i++)
+        x_out[i] = ((float)(16383-i))/191;
     
     // Fill DAC buffer
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size); 
@@ -237,15 +254,17 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     for(i = 0;i < N_spins; i++)
     {
-	    int index = (2*i+1)*buff_per_spin/2;
+	    int index = (2*i+1)*buff_per_spin/2 + shift;
         x_k[i] = (scale*x_in[index]/att)-offset;
     }
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
-    for(i=0;i<buff_size;i++)
+    int shift = find_shift(x_in[96]/att, 96);
+    printf("Iteration = %d , Shift = %d\n",iteration, shift);
+    for(i=192;i<buff_size-192;i++)
     {
-	fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]/att);
+	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
     }
     for(i = 0;i < N_spins; i++)
     {
@@ -440,7 +459,7 @@ int main (int argc, char **argv)
     
     
     //Adjust this later
-    buff_per_spin = (int)BUFFER_SIZE/N_spins;
+    buff_per_spin = (int)(16000/N_spins);
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
    
