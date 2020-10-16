@@ -165,13 +165,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 	//     // printf("x_in[%d] = %f \n",i,x_in[i]);
     // }
 
-    for(i=0;i<buff_size;i++)
-    {
-	   fprintf(fp,"iter=%d %d %f %f\n",iteration,i,x_out[i],x_in[i]/0.92);
-    }
     i = 92;
     int shift = find_shift(x_in[i]/0.92, i);
-    printf("Iteraion = %d , Shift = %d\n",iteration, shift);
+    printf("Iteration = %d , Shift = %d\n",iteration, shift);
+    for(i=192;i<buff_size-192;i++)
+    {
+	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/0.92,x_in[i+shift]/0.92);
+    }
 }
 
 int main (int argc, char **argv) 
