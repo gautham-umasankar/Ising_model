@@ -12,9 +12,9 @@
 #define BUFFER_SIZE 16*1024
 
 int p_step = 1000;
-int trig_delay = 16384+3900; // + 500
+int trig_delay; // + 500
 int t1 = 7830;	//16384+3900;
-int t2 = 8130;	//3900+16384+1200;
+int t2 = 8160;	//3900+16384+1200;
 int breps = 1; 	// 3
 int bcounts = 1;
 float freq = 7630.0;
@@ -261,15 +261,15 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
-    for(i=192;i<buff_size-192;i++)
-    {
+//    for(i=192;i<buff_size-192;i++)
+//    {
 	   //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
-    }
-    for(i = 0; i< N_spins; i++)
-    {
-	int index = (2*i+1)*buff_per_spin/2 + shift + 192;
-    	fprintf(fp, "iter=%d %d %f %f\n",iteration,i,x_in[index],x_out[192 + i*buff_per_spin + ((int)0.5*buff_per_spin)]);  
-    }
+//    }
+//    for(i = 0; i< N_spins; i++)
+//    {
+//	int index = (2*i+1)*buff_per_spin/2 + shift + 192;
+    	//fprintf(fp, "iter=%d %d %f %f\n",iteration,i,x_in[index],x_out[192 + i*buff_per_spin + ((int)0.5*buff_per_spin)]);  
+//    }
     for(i = 0;i < N_spins; i++)
     {
         fprintf(fp2," %f",x_k[i]);
@@ -464,6 +464,7 @@ int main (int argc, char **argv)
     
     //Adjust this later
     buff_per_spin = (int)(16000/N_spins);
+    trig_delay = t1;
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
    
