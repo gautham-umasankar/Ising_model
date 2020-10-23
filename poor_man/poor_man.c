@@ -89,7 +89,7 @@ int find_shift(float value, int exp_ind)
 
 float find_att(float y2, float y1)
 {
-    return 1/(SYNC_BUFFER_SIZE*(y2 - y1));
+    return (SYNC_BUFFER_SIZE*(y2 - y1));
 }
 
 void read_J()
