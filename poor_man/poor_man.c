@@ -84,7 +84,7 @@ void gen_noise()
 
 int find_shift(float value, int exp_ind)
 {
-    return (exp_ind - (int)(value*SYNC_BUFFER_SIZE));
+    return (exp_ind - (int)(value*(SYNC_BUFFER_SIZE-1)));
 }
 
 float find_att(float y2, float y1)
@@ -214,7 +214,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
     printf("Iteration = %d , Shift = %d Attenuation = %f \n",iteration, shift, att);
-    for(i=SYNC_BUFFER_SIZE;i<buff_size-192;i++)
+    for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
     {
         fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
     }
@@ -424,7 +424,7 @@ int main (int argc, char **argv)
     // Ramp in the beginning
     for(i = 0;i < SYNC_BUFFER_SIZE; i++)
     {
-	    float t = ((float)i)/SYNC_BUFFER_SIZE;
+	    float t = ((float)i)/(SYNC_BUFFER_SIZE-1);
         //printf("Xout Index = %d value = %f\n", i, t);
         x_out[i] = t;
     }
@@ -432,7 +432,7 @@ int main (int argc, char **argv)
     // Ramp at the end
     for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
     {
-        x_out[i] = ((float)(BUFFER_SIZE - i - 1))/SYNC_BUFFER_SIZE;
+        x_out[i] = ((float)(BUFFER_SIZE - 1 - i))/(SYNC_BUFFER_SIZE-1);
     }
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
