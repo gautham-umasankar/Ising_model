@@ -38,7 +38,7 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
-float att = 0.91;
+float att = 0.92;
 
 void gen_noise();
 void read_J();
@@ -202,8 +202,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // Set new trigger delay
     trig_delay = t2;
 
-    //att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
-    //printf("Attenuation = %f\n", att);
+    // att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
     int shift = find_shift(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
 
     for(i = 0;i < N_spins; i++)
@@ -214,7 +213,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
-    printf("Iteration = %d , Shift = %d\n",iteration, shift);
+    printf("Iteration = %d , Shift = %d Attenuation = %f \n",iteration, shift, att);
     for(i=SYNC_BUFFER_SIZE;i<buff_size-192;i++)
     {
         fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
