@@ -38,7 +38,7 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
-float att = 0.92;
+float att = 0.91;
 
 void gen_noise();
 void read_J();
@@ -84,7 +84,7 @@ void gen_noise()
 
 int find_shift(float value, int exp_ind)
 {
-    return (exp_ind - (int)(value*191));
+    return (exp_ind - (int)(value*SYNC_BUFFER_SIZE));
 }
 
 float find_att(float y2, float y1)
@@ -202,7 +202,8 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // Set new trigger delay
     trig_delay = t2;
 
-    att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
+    //att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
+    //printf("Attenuation = %f\n", att);
     int shift = find_shift(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
 
     for(i = 0;i < N_spins; i++)
