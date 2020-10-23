@@ -10,7 +10,7 @@
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16*1024
-#define SYNC_BUFFER_SIZE 100
+#define SYNC_BUFFER_SIZE 192
 
 int p_step = 1000;
 int trig_delay; // + 500
