@@ -415,14 +415,14 @@ int main (int argc, char **argv)
     
     
     //Adjust this later
-    buff_per_spin = (int)(16000/N_spins);
+    buff_per_spin = (int)((BUFFER_SIZE - 2*SYNC_BUFFER_SIZE)/N_spins);
     trig_delay = t1;
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
 
     
     // Ramp in the beginning
-    for(i = 0;i < SYNC_BUFFER_SIZE + 1; i++)
+    for(i = 0;i < SYNC_BUFFER_SIZE; i++)
     {
 	    float t = ((float)i)/SYNC_BUFFER_SIZE;
         //printf("Xout Index = %d value = %f\n", i, t);
@@ -432,7 +432,7 @@ int main (int argc, char **argv)
     // Ramp at the end
     for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
     {
-        x_out[i] = ((float)(BUFFER_SIZE - i))/SYNC_BUFFER_SIZE;
+        x_out[i] = ((float)(BUFFER_SIZE - i - 1))/SYNC_BUFFER_SIZE;
     }
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
