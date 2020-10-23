@@ -10,6 +10,7 @@
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16*1024
+#define SYNC_BUFFER_SIZE 100
 
 int p_step = 1000;
 int trig_delay; // + 500
@@ -44,7 +45,6 @@ void read_J();
 void feedback(float *, float, float);
 void single_iteration(float, float, int, int);
 float cut_value();
-double correlation(int);
 int find_shift(float, int);
 
 // x_in stores the input
@@ -84,7 +84,12 @@ void gen_noise()
 
 int find_shift(float value, int exp_ind)
 {
-    return (exp_ind -  (int)(value*191));
+    return (exp_ind - (int)(value*191));
+}
+
+float find_att(float y2, float y1)
+{
+    return 1/(SYNC_BUFFER_SIZE*(y2 - y1));
 }
 
 void read_J()
@@ -118,56 +123,9 @@ void feedback(float *fb, float alpha, float beta)
     }
 }
 
-double correlation(int shift)
-{
-    double cor = 0.0;
-    double norm_out = 0.0, norm_in = 0.0;
-    float *x_in_shifted = calloc(BUFFER_SIZE, sizeof(float));
-    if(shift > 0)
-    {
-        for(int i=shift;i<BUFFER_SIZE;i++)
-            x_in_shifted[i] = x_in[i-shift];
-    }
-    else if(shift <= 0)
-    {
-        for(int i=0;i<BUFFER_SIZE+shift;i++)
-            x_in_shifted[i] = x_in[i-shift];
-    }
-    for(int i = 0;i < BUFFER_SIZE; i++)
-    {
-        cor += x_out[i]*x_in_shifted[i];
-        norm_out += x_out[i]*x_out[i];
-        norm_in += x_in_shifted[i]*x_in_shifted[i];
-    }
-    cor /= sqrt((norm_out*norm_in));
-    return cor;
-}
-
-/*int find_shift()
-{
-    int shift = -2*buff_per_spin;
-    double cor = 0.0;
-    int best_shift = 0;
-    for(;shift < 2*buff_per_spin+1; shift++)
-    {
-        if(correlation(shift) > cor)
-            best_shift = shift;
-    }
-    return best_shift;
-}*/
-
-
 void single_iteration(float alpha, float beta, int s,int iteration)
 {
     int i, n;
-
-    // Ramp in the beginning
-    for(i = 0;i < 192; i++)
-    {
-	    float t = ((float)i)/191;
-        //printf("Xout Index = %d value = %f\n", i, t);
-        x_out[i] = t;
-    }
 
     // Multiiply by alpha aOne waveform per burstnd add noise
     float *feedback_terms = (float *)calloc(N_spins, sizeof(float)); 
@@ -178,104 +136,98 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     {
         n = rand()%N_noise;
         float value = -feedback_terms[i] + noise[n];
-        //printf("feedback_terms[%d] = %f noise = %f value = %f\n",i,feedback_terms[i],noise[n],value); 
-	    //printf("Value after cos is: %f \n",value);
+        // printf("feedback_terms[%d] = %f noise = %f value = %f\n",i,feedback_terms[i],noise[n],value); 
+	    // printf("Value after cos is: %f \n",value);
 
-        //Threshold the output
+        // Threshold the output
         if(value >= 1.0)
         {
             value = 1.0;
         }
-        else if(value<=-1.0)
+        else if(value <= -1.0)
         {
             value = -1.0;
         }
         
 	    // Remove in lab
         value = pow(cos(value + (0.25*M_PI)),2); //Modulator function. 	 
-	    //printf("Value = %f\n", value);
-        //value = 0.01*n;
+	    // printf("Value = %f\n", value);
+        // value = 0.01*n;
 	
         // x_out an array that will store the output
     
         // Store the value in the buffer to be given as output for the next
         // buff_size cycles
-        for(int j = 192 + i*buff_per_spin;j < (i+1)*(buff_per_spin) + 192;j++)
+        for(int j = SYNC_BUFFER_SIZE + i*buff_per_spin;j < (i+1)*(buff_per_spin) + SYNC_BUFFER_SIZE;j++)
         {
             x_out[j] = value;
         }
     }
-
-    for(i = 16192;i < BUFFER_SIZE; i++)
-        x_out[i] = ((float)(16383-i))/191;
     
     // Fill DAC buffer
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size); 
     
-    //Reset Acquisition to Defaults
+    // Reset Acquisition to Defaults
     rp_AcqReset();
-    
 
     // Configure acquisition
     rp_AcqSetTriggerDelay(trig_delay);
     
-    //Start Acquisition
+    // Start Acquisition
     rp_AcqStart();
 
-    //Start DAC Operation
+    // Start DAC Operation
     rp_GenOutEnable(RP_CH_2);
 
     // Trigger immediately
     rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
-    
 
     rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
 
-    i = 0;
     // Wait for buffer to get full after Trigger.
     do
     {
 	    rp_AcqGetTriggerState(&state);
 	}while(state == RP_TRIG_STATE_TRIGGERED);
 	
-    //Get data from buffer to code
+    // Get data from buffer to code
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
 
     // Stop acquisition
     rp_AcqStop();
     
-    //Disable output
+    // Disable output
     rp_GenOutDisable(RP_CH_2);
 
-    //Set new trigger delay
+    // Set new trigger delay
     trig_delay = t2;
-    
-    int shift = find_shift(x_in[96]/att, 96);
+
+    att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
+    int shift = find_shift(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
 
     for(i = 0;i < N_spins; i++)
     {
-	    int index = (2*i+1)*buff_per_spin/2 + shift + 192;
+	    int index = (2*i+1)*buff_per_spin/2 + shift + SYNC_BUFFER_SIZE;
         x_k[i] = (scale*x_in[index]/att)-offset;
     }
 
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
-//    for(i=192;i<buff_size-192;i++)
-//    {
-	   //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
-//    }
-//    for(i = 0; i< N_spins; i++)
-//    {
-//	int index = (2*i+1)*buff_per_spin/2 + shift + 192;
-    	//fprintf(fp, "iter=%d %d %f %f\n",iteration,i,x_in[index],x_out[192 + i*buff_per_spin + ((int)0.5*buff_per_spin)]);  
-//    }
+    for(i=SYNC_BUFFER_SIZE;i<buff_size-192;i++)
+    {
+        fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    }
+    // for(i = 0; i< N_spins; i++)
+    // {
+    //     int index = (2*i+1)*buff_per_spin/2 + shift + 192;
+    //     fprintf(fp, "iter=%d %d %f %f\n",iteration,i,x_in[index],x_out[192 + i*buff_per_spin + ((int)0.5*buff_per_spin)]);  
+    // }
     for(i = 0;i < N_spins; i++)
     {
         fprintf(fp2," %f",x_k[i]);
     }
     fprintf(fp2,"\n");
-
 }
 
 float cut_value()
@@ -467,6 +419,21 @@ int main (int argc, char **argv)
     trig_delay = t1;
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
+
+    
+    // Ramp in the beginning
+    for(i = 0;i < SYNC_BUFFER_SIZE + 1; i++)
+    {
+	    float t = ((float)i)/SYNC_BUFFER_SIZE;
+        //printf("Xout Index = %d value = %f\n", i, t);
+        x_out[i] = t;
+    }
+
+    // Ramp at the end
+    for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
+    {
+        x_out[i] = ((float)(BUFFER_SIZE - i))/SYNC_BUFFER_SIZE;
+    }
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
