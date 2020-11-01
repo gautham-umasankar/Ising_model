@@ -215,7 +215,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 	//     // printf("x_in[%d] = %f \n",i,x_in[i]);
     // }
 
-    int shift = find_shift()-i;
+    int shift = find_shift()-1;
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
     //for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
     {

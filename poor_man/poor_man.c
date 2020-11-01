@@ -41,11 +41,13 @@ float scale = 1;
 float att = 0.92;
 
 void gen_noise();
+void add_sync_part();
 void read_J();
 void feedback(float *, float, float);
 void single_iteration(float, float, int, int);
 float cut_value();
-int find_shift(float, int);
+int find_shift_ramp(float, int);
+int find_shift();
 
 // x_in stores the input
 float *x_in;
@@ -82,7 +84,74 @@ void gen_noise()
 	}
 }
 
-int find_shift(float value, int exp_ind)
+void add_sync_part()
+{
+    int i=0;
+    x_out[i++] = 0;
+    for(;i<SYNC_BUFFER_SIZE/2;i++)
+    {
+        x_out[i] = 1;
+    }
+
+    for(;i<SYNC_BUFFER_SIZE;i++)
+    {
+        x_out[i] = -1;
+    }
+    for(i=BUFFER_SIZE - SYNC_BUFFER_SIZE;i<BUFFER_SIZE;i++)
+	x_out[i] = 0;
+}
+
+void add_ramp()
+{
+    int i;
+    // Ramp in the beginning
+    for(i = 0;i < SYNC_BUFFER_SIZE; i++)
+    {
+	    float t = ((float)i)/(SYNC_BUFFER_SIZE-1);
+        //printf("Xout Index = %d value = %f\n", i, t);
+        x_out[i] = t;
+    }
+
+    // Ramp at the end
+    for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
+    {
+        x_out[i] = ((float)(BUFFER_SIZE - 1 - i))/(SYNC_BUFFER_SIZE-1);
+    }
+}
+
+int find_shift()
+{
+    int i = 0, index = -1;
+    printf("value at 0 = %f\n", x_in[0]);
+    while(i < SYNC_BUFFER_SIZE)
+    {
+        if(x_in[i++]>0.2)
+        {
+            index = i-1;
+            break;
+        }
+    }
+    if(index == 0)
+    {
+	printf("Shift is towards the left.");
+        while(i < SYNC_BUFFER_SIZE)
+        {
+            if(x_in[i++]<-0.2)
+            {
+                index = i-1;
+                break;
+            }
+        }
+        return index - (int)(SYNC_BUFFER_SIZE/2);
+    }
+    else
+    {
+	printf("Shift is towards the right.");
+        return index;
+    }   
+}
+
+int find_shift_ramp(float value, int exp_ind)
 {
     return (exp_ind - (int)(value*(SYNC_BUFFER_SIZE-1)));
 }
@@ -203,7 +272,9 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     trig_delay = t2;
 
     //att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
-    int shift = find_shift(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
+    // int shift = find_shift_ramp(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
+
+    int shift = find_shift() - 1;
 
     for(i = 0;i < N_spins; i++)
     {
@@ -214,10 +285,12 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
     printf("Iteration = %d , Shift = %d Attenuation = %f \n",iteration, shift, att);
-    //for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
-    //{
-        //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
-    //}
+    
+    for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    {
+        fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    }
+
     // for(i = 0; i< N_spins; i++)
     // {
     //     int index = (2*i+1)*buff_per_spin/2 + shift + 192;
@@ -316,9 +389,9 @@ int main (int argc, char **argv)
                         break;
                 case 'j': //Change value of J
                         fclose(j_file);
-			j_file = fopen(argv[++a],"r");
- 		        char line_for_N[20];
-			fgets(line_for_N, 20, j_file);
+                        j_file = fopen(argv[++a],"r");
+                        char line_for_N[20];
+                        fgets(line_for_N, 20, j_file);
                         sscanf(line_for_N, "%d %*d", &N_spins);
                         break;
                 case 'r': // Number of spins/runs
@@ -347,9 +420,9 @@ int main (int argc, char **argv)
                             breps = atof(argv[++a]);
                         break;
                 case 'A':
-			att = atof(argv[++a]);
-			break;
-		case 'T': //trig_delay
+                        att = atof(argv[++a]);
+                        break;
+                case 'T': //trig_delay
                         if(argv[a][2] == '1')
                             t1 = atof(argv[++a]);
                         else
@@ -425,19 +498,7 @@ int main (int argc, char **argv)
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
 
     
-    // Ramp in the beginning
-    for(i = 0;i < SYNC_BUFFER_SIZE; i++)
-    {
-	    float t = ((float)i)/(SYNC_BUFFER_SIZE-1);
-        //printf("Xout Index = %d value = %f\n", i, t);
-        x_out[i] = t;
-    }
-
-    // Ramp at the end
-    for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
-    {
-        x_out[i] = ((float)(BUFFER_SIZE - 1 - i))/(SYNC_BUFFER_SIZE-1);
-    }
+    add_sync_part();
    
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
