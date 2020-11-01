@@ -10,7 +10,7 @@
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16*1024
-#define SYNC_BUFFER_SIZE 192
+#define SYNC_BUFFER_SIZE 100
 
 int p_step = 1000;
 int trig_delay; // + 500
@@ -20,7 +20,7 @@ int breps = 1; 	// 3
 int bcounts = 1;
 float freq = 7630.0;
 
-int N_spins = 1;
+int N_spins = 256;
 int N_iters = 30;
 int N_noise = 100;
 int N_runs = 1;
@@ -202,7 +202,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     // Set new trigger delay
     trig_delay = t2;
 
-    // att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
+    //att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
     int shift = find_shift(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
 
     for(i = 0;i < N_spins; i++)
@@ -214,10 +214,10 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     fprintf(fp2,"%f %f %d %d",alpha,beta,s,iteration);
 
     printf("Iteration = %d , Shift = %d Attenuation = %f \n",iteration, shift, att);
-    for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
-    {
-        fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
-    }
+    //for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    //{
+        //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    //}
     // for(i = 0; i< N_spins; i++)
     // {
     //     int index = (2*i+1)*buff_per_spin/2 + shift + 192;
@@ -258,7 +258,7 @@ int main (int argc, char **argv)
     strftime(sync_filename, sizeof(sync_filename), "./data/xout_xin_%d_%m_%Y_%H_%M_%S.csv", timenow);
     strftime(traj_filename, sizeof(traj_filename), "./data/trajectory_%d_%m_%Y_%H_%M_%S.csv", timenow);
     strftime(cut_filename, sizeof(cut_filename), "./data/cut_%d_%m_%Y_%H_%M_%S.csv", timenow);
- 
+   
     char comment[150];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin);  // read string
@@ -266,14 +266,12 @@ int main (int argc, char **argv)
     fp = fopen(sync_filename,"w");
     fp2 = fopen(traj_filename,"w");
     fp3 = fopen(cut_filename,"w");
-    j_file = fopen("./Maxcut_instances/J_3spins.txt", "r");
+    j_file = fopen("./Maxcut_instances/s_256.txt", "r");
     
     fprintf(fp, "#%s\n", comment);
     fprintf(fp2, "#%s\n", comment);
     fprintf(fp3, "#%s\n", comment);
     fprintf(fp3, "#Alpha Beta Cut\n");
-    printf("%s\n", comment);
-
     if(argc > 1)
     {
         for(int a=1;a<argc;a++)
@@ -317,10 +315,10 @@ int main (int argc, char **argv)
                         BETA_MAX = BETA_MIN;
                         break;
                 case 'j': //Change value of J
-                        fclose(j_file); 
-                        j_file = fopen(argv[++a],"r");
- 		        	    char line_for_N[20];
-			            fgets(line_for_N, 20, j_file);
+                        fclose(j_file);
+			j_file = fopen(argv[++a],"r");
+ 		        char line_for_N[20];
+			fgets(line_for_N, 20, j_file);
                         sscanf(line_for_N, "%d %*d", &N_spins);
                         break;
                 case 'r': // Number of spins/runs
@@ -348,7 +346,10 @@ int main (int argc, char **argv)
                         else
                             breps = atof(argv[++a]);
                         break;
-                case 'T': //trig_delay
+                case 'A':
+			att = atof(argv[++a]);
+			break;
+		case 'T': //trig_delay
                         if(argv[a][2] == '1')
                             t1 = atof(argv[++a]);
                         else
@@ -361,11 +362,12 @@ int main (int argc, char **argv)
         }
     }
 
-   
+    
     x_out = (float *)calloc(buff_size, sizeof(float));
     x_in = (float *)calloc(buff_size, sizeof(float));
     noise = (float *)calloc(N_noise, sizeof(float));
     x_k = (float *)calloc(N_spins, sizeof(float));
+     
     
     int i,s;
 
@@ -377,7 +379,7 @@ int main (int argc, char **argv)
 
     read_J();
 
-    
+      
     // Initialization of API
     if (rp_Init() != RP_OK) 
     {
@@ -416,7 +418,9 @@ int main (int argc, char **argv)
     
     //Adjust this later
     buff_per_spin = (int)((BUFFER_SIZE - 2*SYNC_BUFFER_SIZE)/N_spins);
+    printf("Buff_per_spin = %d\n",buff_per_spin);
     trig_delay = t1;
+
 
     fprintf(fp2,"#Alpha Beta Run/Spin Iteration Values\n");
 
