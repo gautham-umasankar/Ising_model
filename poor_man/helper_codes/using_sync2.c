@@ -10,7 +10,7 @@
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16*1024
-#define SYNC_BUFFER_SIZE 100
+#define SYNC_BUFFER_SIZE 1000
 
 int p_step = 1000;
 int trig_delay;
@@ -41,7 +41,7 @@ float scale = 1;
 float att = 0.9;
 
 void single_iteration(float, float, int, int);
-int find_shift(float, int);
+int find_shift();
 
 // x_in stores the input
 float *x_in;
