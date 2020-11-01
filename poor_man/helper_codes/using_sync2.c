@@ -54,13 +54,13 @@ int find_shift_huffman(float value, int exp_ind)
     int index = -1, con1 = 0, i;
     for(i = 0;i<SYNC_BUFFER_SIZE-1 && index == -1;i++)
     {
-        if(x_out[i] > -0.5 && x_out[i+1] <= -0.5)
+        if(x_in[i] > -0.5 && x_in[i+1] <= -0.5)
         {
             index = i;
         }
     }
 
-    while(x_out[i++] <= -0.5)
+    while(x_in[i++] <= -0.5)
     {
         con1++;
     }
@@ -74,7 +74,7 @@ int find_shift()
     int i = 0, index = -1;
     while(i < SYNC_BUFFER_SIZE)
     {
-        if(x_out[i++]>0.2)
+        if(x_in[i++]>0.2)
         {
             index = i;
             break;
@@ -84,7 +84,7 @@ int find_shift()
     {
         while(i < SYNC_BUFFER_SIZE)
         {
-            if(x_out[i++]<-0.2)
+            if(x_in[i++]<-0.2)
             {
                 index = i;
                 break;
@@ -212,9 +212,13 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     i = 92;
     int shift = find_shift(x_in[i]/att, i);
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
-    for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
+    // for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
+    // {
+	//    fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    // }
+    for(i=0;i<BUFFER_SIZE;i++)
     {
-	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att);//,x_in[i+shift]/att);
     }
 }
 
