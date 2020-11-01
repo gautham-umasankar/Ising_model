@@ -10,12 +10,12 @@
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16*1024
-#define SYNC_BUFFER_SIZE 1000
+#define SYNC_BUFFER_SIZE 100
 
 int p_step = 1000;
 int trig_delay;
 int t1 = 7830;	//16384+3900;
-int t2 = 8130;	//3900+16384+1200;
+int t2 = 8160;	//3900+16384+1200;
 int breps = 1; 	// 3
 int bcounts = 1;
 float freq = 7630.0;
@@ -72,21 +72,23 @@ int find_shift_huffman(float value, int exp_ind)
 int find_shift()
 {
     int i = 0, index = -1;
+    printf("value at 0 = %f\n", x_in[0]);
     while(i < SYNC_BUFFER_SIZE)
     {
         if(x_in[i++]>0.2)
         {
-            index = i;
+            index = i-1;
             break;
         }
     }
     if(index == 0)
     {
+	printf("Shift is towards the left.");
         while(i < SYNC_BUFFER_SIZE)
         {
             if(x_in[i++]<-0.2)
             {
-                index = i;
+                index = i-1;
                 break;
             }
         }
@@ -94,6 +96,7 @@ int find_shift()
     }
     else
     {
+	printf("Shift is towards the right.");
         return index;
     }
     
@@ -118,6 +121,7 @@ void add_sync_part_huffman()
 void add_sync_part()
 {
     int i=0;
+    x_out[i++] = 0;
     for(;i<SYNC_BUFFER_SIZE/2;i++)
     {
         x_out[i] = 1;
@@ -127,6 +131,8 @@ void add_sync_part()
     {
         x_out[i] = -1;
     }
+    for(i=BUFFER_SIZE - SYNC_BUFFER_SIZE;i<BUFFER_SIZE;i++)
+	x_out[i] = 0;
 }
 
 void single_iteration(float alpha, float beta, int s,int iteration)
@@ -209,16 +215,15 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 	//     // printf("x_in[%d] = %f \n",i,x_in[i]);
     // }
 
-    i = 92;
-    int shift = find_shift(x_in[i]/att, i);
+    int shift = find_shift()-i;
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
-    // for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
-    // {
-	//    fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
-    // }
-    for(i=0;i<BUFFER_SIZE;i++)
+    //for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
     {
-	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att);//,x_in[i+shift]/att);
+//	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+    }
+    for(i=0;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    {
+	   fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att, x_in[i+shift]/att);
     }
 }
 
