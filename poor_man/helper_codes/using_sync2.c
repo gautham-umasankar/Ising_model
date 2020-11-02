@@ -15,7 +15,7 @@
 int p_step = 1000;
 int trig_delay;
 int t1 = 7830;	//16384+3900;
-int t2 = 8160;	//3900+16384+1200;
+int t2 = 8150;	//3900+16384+1200;
 int breps = 1; 	// 3
 int bcounts = 1;
 float freq = 7630.0;
@@ -215,7 +215,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
 	//     // printf("x_in[%d] = %f \n",i,x_in[i]);
     // }
 
-    int shift = find_shift()-1;
+    int shift = find_shift();
     printf("Iteration = %d , Shift = %d\n",iteration, shift);
     //for(i=SYNC_BUFFER_SIZE;i<buff_size-SYNC_BUFFER_SIZE;i++)
     {

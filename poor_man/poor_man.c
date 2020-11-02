@@ -15,14 +15,14 @@
 int p_step = 1000;
 int trig_delay; // + 500
 int t1 = 7830;	//16384+3900;
-int t2 = 8160;	//3900+16384+1200;
+int t2 = 8150;	//3900+16384+1200;
 int breps = 1; 	// 3
 int bcounts = 1;
 float freq = 7630.0;
 
 int N_spins = 256;
 int N_iters = 30;
-int N_noise = 100;
+int N_noise = 1000;
 int N_runs = 1;
 int buff_size = BUFFER_SIZE;
 int buff_per_spin;
@@ -38,7 +38,7 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
-float att = 0.92;
+float att = 0.9;
 
 void gen_noise();
 void add_sync_part();
@@ -274,7 +274,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     //att = find_att(x_in[(int)SYNC_BUFFER_SIZE/2], x_in[(int)SYNC_BUFFER_SIZE/2-1]);
     // int shift = find_shift_ramp(x_in[(int)SYNC_BUFFER_SIZE/2]/att, (int)SYNC_BUFFER_SIZE/2);
 
-    int shift = find_shift() - 1;
+    int shift = find_shift()-1;
 
     for(i = 0;i < N_spins; i++)
     {
@@ -491,6 +491,7 @@ int main (int argc, char **argv)
     
     //Adjust this later
     buff_per_spin = (int)((BUFFER_SIZE - 2*SYNC_BUFFER_SIZE)/N_spins);
+    printf("N_spins = %d\n", N_spins);
     printf("Buff_per_spin = %d\n",buff_per_spin);
     trig_delay = t1;
 
