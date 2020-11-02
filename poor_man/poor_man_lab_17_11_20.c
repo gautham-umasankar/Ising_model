@@ -4,7 +4,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <time.h>
-
+#include <string.h>
 #include <inttypes.h>
 #include <pthread.h>
 
@@ -56,7 +56,7 @@ float cut_value();
 int find_shift_ramp(float, int);
 int find_shift();
 void find_I();
-inline void get_xin();
+static inline void get_xin();
 
 // x_in stores the input
 float *x_in;
@@ -98,10 +98,11 @@ void read_J()
     char line[20];
     printf("\nReading file for J...\n");
     float max_weight = 0.0, min_weight = 1000.0, mean_weight = 0.0;
-
+    N_edges = 0;
     while (fgets(line, 30, j_file) != 0)
     {
-        // puts(line);
+        N_edges += 1;
+	// puts(line);
         sscanf(line, "%d %d %f", &row, &column, &value);
         // printf("J[%d][%d]=%f\n",row,column,J[row][column]);
         J[row - 1][column - 1] = value;
@@ -150,7 +151,7 @@ int find_shift()
     }
     if (index == 0)
     {
-        printf("Shift is towards the left.");
+        printf("Shift is towards the left.\n");
         while (i < SYNC_BUFFER_SIZE)
         {
             if (x_in[i++] < lower_threshold)
@@ -163,12 +164,12 @@ int find_shift()
     }
     else
     {
-        printf("Shift is towards the right.");
+        printf("Shift is towards the right.\n");
         return index;
     }
 }
 
-inline void get_xin()
+static inline void get_xin()
 {
     // Fill DAC buffer
     rp_GenArbWaveform(RP_CH_2, x_out, buff_size);
@@ -257,9 +258,9 @@ void find_I()
     printf("Output value for 0(middle value) = %f\n", i2);
 
     upper_threshold = (upper + i2) / 2;
-    printf("Upper threshold = %f", upper_threshold);
+    printf("Upper threshold = %f\n", upper_threshold);
     lower_threshold = (lower + i2) / 2;
-    printf("Lower threshold = %f", lower_threshold);
+    printf("Lower threshold = %f\n", lower_threshold);
     scale = 1 / (2 * i2);
     printf("Scale found = %f\n", scale);
 }
@@ -318,7 +319,7 @@ void single_iteration(float alpha, float beta, int s, int iteration)
         }
     }
 
-    get_x_in();
+    get_xin();
 
     int shift = find_shift() - 1;
 
@@ -387,13 +388,16 @@ int main(int argc, char **argv)
     char comment[150];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin); // read string
-
+    printf("cut file name is: %s\n",cut_filename);
     traj_file = fopen(traj_filename, "w");
     sync_file = fopen(sync_filename, "w");
     cut_file = fopen(cut_filename, "w");
 
-    fprintf(cut_file, "#%s\n", comment);
-    fprintf(cut_file, "#Instance_name N_spins N_edges Density Min_weight Max_weight Mean_weight Alpha Beta Scaling Offset Sigma Run_number Iteration_number Time_for_iteration Cut\n");
+    int check = fprintf(cut_file, "#%s\n", comment);
+    printf("Check for comment print is: %d \n",check);
+    check = fprintf(cut_file, "#Instance_name N_spins N_edges Density Min_weight Max_weight Mean_weight Alpha Beta Scaling Offset Sigma Run_number Iteration_number Time_for_iteration Cut\n");
+    printf("Check for header print is: %d \n",check);
+ 
 
     if (argc > 1)
     {
@@ -455,10 +459,6 @@ int main(int argc, char **argv)
             case 'n': // Number of points in noise
                 N_noise = atoi(argv[++a]);
                 break;
-            case 'f': // File to save data in
-                fclose(sync_file);
-                sync_file = fopen(argv[++a], "w");
-                break;
             case 'F':
                 freq = atof(argv[++a]);
                 break;
@@ -497,7 +497,7 @@ int main(int argc, char **argv)
     /* Scanning the in directory */
 
     printf("Opening directory...\n");
-    if (NULL == (FD = opendir("/home/Ising_model/poor_man/Maxcut_instances/benchmark_list")))
+    if (NULL == (FD = opendir("/root/Ising_model/poor_man/Maxcut_instances/benchmark_list")))
     {
         fprintf(stderr, "Error : Failed to open input directory\n");
         fclose(j_file);
@@ -511,14 +511,14 @@ int main(int argc, char **argv)
     x_in = (float *)calloc(buff_size, sizeof(float));
     noise = (float *)calloc(N_noise, sizeof(float));
     x_k = (float *)calloc(N_spins, sizeof(float));
-
-    int i, s;
-
     J = (float **)calloc(N_spins, sizeof(float *));
     for (int k = 0; k < N_spins; k++)
     {
         J[k] = (float *)calloc(N_spins, sizeof(float));
     }
+
+
+    int i, s;
 
     // Initialization of API
     if (rp_Init() != RP_OK)
@@ -559,14 +559,20 @@ int main(int argc, char **argv)
 
     while ((in_file = readdir(FD)))
     {
-
+	char instance_name[200] = "/root/Ising_model/poor_man/Maxcut_instances/benchmark_list/";
+	printf("File name: %s\n",in_file->d_name);
+	strcat(instance_name,in_file->d_name);
+	printf("File name: %s\n",in_file->d_name);
         // Remove current and parent directory
         if (!strcmp(in_file->d_name, "."))
             continue;
         if (!strcmp(in_file->d_name, ".."))
             continue;
-
-        j_file = fopen(in_file->d_name, "r");
+	
+        //j_file = fopen(in_file->d_name, "r");
+	j_file = fopen(instance_name, "r");
+        //printf("Using file:%s\n", in_file->d_name);
+	printf("Using file: %s\n", instance_name);
         if (j_file == NULL)
         {
             fprintf(stderr, "Error : Failed to open entry file\n");
@@ -577,11 +583,17 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        printf("Using file:%s\n", in_file->d_name);
+        printf("Using file:%s\n", instance_name);
         fgets(line_for_N, 20, j_file);
         sscanf(line_for_N, "%d %d", &N_spins, &N_edges);
         float edge_density = 2*N_edges/(N_spins*(N_spins-1));
-        
+        J = (float **)calloc(N_spins, sizeof(float *));
+    	for (int k = 0; k < N_spins; k++)
+    	{
+        	J[k] = (float *)calloc(N_spins, sizeof(float));
+    	}
+
+ 
         // fprintf(cut_file, "#%s\n", in_file->d_name);
 
         //Adjust this later
@@ -601,13 +613,14 @@ int main(int argc, char **argv)
         printf("Using scale = %f\n", scale);
 
         if(traj_write == 1)
+	    printf("Inside traj write\n");
             fprintf(traj_file, "#%s\n", in_file->d_name);
 
         fprintf(cut_file, "%s ", in_file->d_name);
         fprintf(cut_file, "%d %d %f ", N_spins, N_edges, edge_density);
 
         read_J();
-
+	float cut_store;
         for (alpha = ALPHA_MIN; alpha <= ALPHA_MAX; alpha += ALPHA_STEP)
         {
             for (beta = BETA_MIN; beta <= BETA_MAX; beta += BETA_STEP)
@@ -622,14 +635,16 @@ int main(int argc, char **argv)
                         t = clock();
                         single_iteration(alpha, beta, s, i);
                         t = clock() - t;
-                        float cut_store = cut_value();
-                        fprintf(cut_file, "%f %f %f %f %f %f %d %d ", alpha, beta, scale, offset, sig_f, s, i);
-                        fprintf("%f ", ((double)t)/CLOCKS_PER_SEC);
+                        cut_store = cut_value();
+			fprintf(cut_file, "%s ", in_file->d_name);
+		        fprintf(cut_file, "%d %d %f ", N_spins, N_edges, edge_density);
+                        fprintf(cut_file, "%f %f %f %f %f %d %d ", alpha, beta, scale, offset, sig_f, s, i);
+                        fprintf(cut_file, "%lf ",((double)t)/CLOCKS_PER_SEC);
                         fprintf(cut_file, "%f\n", cut_store);
                     }
                     printf("Alpha = %f Beta = %f The cut value is: %f\n", alpha, beta, cut_store);
-                    free(x_k);
-                    x_k = (float *)calloc(N_spins, sizeof(float));
+		    for(i = 0; i<N_spins; i++)
+		    	x_k[i] = 0;
                 }
             }
         }
@@ -641,7 +656,7 @@ int main(int argc, char **argv)
     free(noise);
     rp_Release();
 
-    fclose(sync_file)
+    fclose(sync_file);
     fclose(traj_file);
     fclose(cut_file);
     return EXIT_SUCCESS;

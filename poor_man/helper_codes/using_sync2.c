@@ -75,7 +75,7 @@ int find_shift()
     printf("value at 0 = %f\n", x_in[0]);
     while(i < SYNC_BUFFER_SIZE)
     {
-        if(x_in[i++]>0.2)
+        if(x_in[i++]>0.11)
         {
             index = i-1;
             break;
@@ -86,7 +86,7 @@ int find_shift()
 	printf("Shift is towards the left.");
         while(i < SYNC_BUFFER_SIZE)
         {
-            if(x_in[i++]<-0.2)
+            if(x_in[i++]<0.07)
             {
                 index = i-1;
                 break;
@@ -124,12 +124,12 @@ void add_sync_part()
     x_out[i++] = 0;
     for(;i<SYNC_BUFFER_SIZE/2;i++)
     {
-        x_out[i] = 1;
+        x_out[i] = -1;
     }
 
     for(;i<SYNC_BUFFER_SIZE;i++)
     {
-        x_out[i] = -1;
+        x_out[i] = 1;
     }
     for(i=BUFFER_SIZE - SYNC_BUFFER_SIZE;i<BUFFER_SIZE;i++)
 	x_out[i] = 0;
