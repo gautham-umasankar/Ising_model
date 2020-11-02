@@ -22,7 +22,7 @@ float freq = 7630.0;
 
 int N_spins = 256;
 int N_iters = 30;
-int N_noise = 1000;
+int N_noise = 100;
 int N_runs = 1;
 int buff_size = BUFFER_SIZE;
 int buff_per_spin;
@@ -288,7 +288,7 @@ void single_iteration(float alpha, float beta, int s,int iteration)
     
     for(i=SYNC_BUFFER_SIZE;i<BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
     {
-        fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
+        //fprintf(fp,"iter=%d %d %f %f %f\n",iteration,i,x_out[i],x_in[i]/att,x_in[i+shift]/att);
     }
 
     // for(i = 0; i< N_spins; i++)
