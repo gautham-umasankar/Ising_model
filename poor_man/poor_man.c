@@ -48,17 +48,18 @@ void single_iteration(float, float, int, int);
 float cut_value();
 int find_shift_ramp(float, int);
 int find_shift();
+void find_I();
 
 // x_in stores the input
 float *x_in;
 float *x_k;
 float *x_out;
+float upper_threshold = 0.2;
+float lower_threshold = -0.2;
 
 FILE *fp, *fp2, *fp3, *j_file;
 float *noise;
 float **J;
-
-
 
 void gen_noise()
 {
@@ -101,24 +102,6 @@ void add_sync_part()
 	x_out[i] = 0;
 }
 
-void add_ramp()
-{
-    int i;
-    // Ramp in the beginning
-    for(i = 0;i < SYNC_BUFFER_SIZE; i++)
-    {
-	    float t = ((float)i)/(SYNC_BUFFER_SIZE-1);
-        //printf("Xout Index = %d value = %f\n", i, t);
-        x_out[i] = t;
-    }
-
-    // Ramp at the end
-    for(i = BUFFER_SIZE - SYNC_BUFFER_SIZE;i < BUFFER_SIZE; i++)
-    {
-        x_out[i] = ((float)(BUFFER_SIZE - 1 - i))/(SYNC_BUFFER_SIZE-1);
-    }
-}
-
 int find_shift()
 {
     int i = 0, index = -1;
@@ -151,14 +134,94 @@ int find_shift()
     }   
 }
 
-int find_shift_ramp(float value, int exp_ind)
+void find_I()
 {
-    return (exp_ind - (int)(value*(SYNC_BUFFER_SIZE-1)));
-}
+    int i = 0;
+    for(i = SYNC_BUFFER_SIZE;i < (BUFFER_SIZE+SYNC_BUFFER_SIZE)/3;i++)
+    {
+        x_out[i] = -1;
+    }
+    for(;i < (2*BUFFER_SIZE-SYNC_BUFFER_SIZE)/3;i++)
+    {
+        x_out[i] = 1;
+    }
+    for(;i < BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    {
+        x_out[i] = 0;
+    }
+    // Fill DAC buffer
+    rp_GenArbWaveform(RP_CH_2, x_out, buff_size); 
+    
+    // Reset Acquisition to Defaults
+    rp_AcqReset();
 
-float find_att(float y2, float y1)
-{
-    return (SYNC_BUFFER_SIZE*(y2 - y1));
+    // Configure acquisition
+    rp_AcqSetTriggerDelay(trig_delay);
+    
+    // Start Acquisition
+    rp_AcqStart();
+
+    // Start DAC Operation
+    rp_GenOutEnable(RP_CH_2);
+
+    // Trigger immediately
+    rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW);
+
+    rp_acq_trig_state_t state = RP_TRIG_STATE_TRIGGERED;    
+
+    // Wait for buffer to get full after Trigger.
+    do
+    {
+	    rp_AcqGetTriggerState(&state);
+	}while(state == RP_TRIG_STATE_TRIGGERED);
+	
+    // Get data from buffer to code
+    rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
+
+    // Stop acquisition
+    rp_AcqStop();
+    
+    // Disable output
+    rp_GenOutDisable(RP_CH_2);
+
+    // Set new trigger delay
+    trig_delay = t2;
+
+    int shift = find_shift()-1;
+
+    for(i = SYNC_BUFFER_SIZE;i < BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    {
+        x_out[i] = 0;
+    }
+    float lower = 0.0, upper = 0.0, i2 = 0.0;
+
+    for(i = SYNC_BUFFER_SIZE + shift;i < (BUFFER_SIZE+SYNC_BUFFER_SIZE)/3 + shift;i++)
+    {
+        lower += x_in[i];
+    }
+    lower /= (BUFFER_SIZE-SYNC_BUFFER_SIZE)/3;
+    printf("Output value for -1(lower bound)=%f", lower);
+
+    for(;i < (2*BUFFER_SIZE-SYNC_BUFFER_SIZE)/3;i++)
+    {
+        upper += x_in[i];
+    }
+    upper /= (BUFFER_SIZE-SYNC_BUFFER_SIZE)/3;
+    printf("Output value for 1(upper bound)=%f", upper);
+
+    for(;i < BUFFER_SIZE-SYNC_BUFFER_SIZE;i++)
+    {
+        i2 += x_in[i];
+    }
+    i2 /= (BUFFER_SIZE-SYNC_BUFFER_SIZE)/3;
+    printf("Output value for 0(middle value)=%f", i2);
+
+    upper_threshold = (upper + i2)/2;
+    printf("Upper threshold = %f", upper_threshold);
+    lower_threshold = (lower + i2)/2;
+    printf("Lower threshold = %f", lower_threshold);
+    scale = 1/(2*i2);
+    printf("Scale found = %f\n", scale);
 }
 
 void read_J()
@@ -332,6 +395,8 @@ int main (int argc, char **argv)
     strftime(traj_filename, sizeof(traj_filename), "./data/trajectory_%d_%m_%Y_%H_%M_%S.csv", timenow);
     strftime(cut_filename, sizeof(cut_filename), "./data/cut_%d_%m_%Y_%H_%M_%S.csv", timenow);
    
+    float set_scale = 0.0;
+
     char comment[150];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin);  // read string
@@ -401,7 +466,7 @@ int main (int argc, char **argv)
                         offset = atof(argv[++a]);
                         break;
                 case 's': // Scaling factor due to the photodiode
-                        scale = atof(argv[++a]);
+                        set_scale = atof(argv[++a]);
                         break;
                 case 'n': // Number of points in noise
                         N_noise = atoi(argv[++a]);
@@ -500,7 +565,14 @@ int main (int argc, char **argv)
 
     
     add_sync_part();
-   
+
+    // find_I();
+    if(set_scale != 0)
+    {
+        scale = set_scale;
+        printf("Using scale = %f\n",scale);
+    }
+
     for(alpha = ALPHA_MIN;alpha <= ALPHA_MAX;alpha += ALPHA_STEP)
     {
         for(beta = BETA_MIN;beta <= BETA_MAX;beta += BETA_STEP)
