@@ -41,12 +41,16 @@ float BETA_STEP = 0.1;
 float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
-float att = 0.9;
+float att = 1; //Lab
 float upper_threshold = 0.11;
 float lower_threshold = 0.07;
 
 int sync_write = 0, traj_write = 0;
 
+float max_weight = 0.0;
+float min_weight = 1000.0;
+float mean_weight = 0.0;
+   
 void gen_noise();
 void add_sync_part();
 void read_J();
@@ -97,7 +101,9 @@ void read_J()
     float value;
     char line[20];
     printf("\nReading file for J...\n");
-    float max_weight = 0.0, min_weight = 1000.0, mean_weight = 0.0;
+    max_weight = 0.0;
+    min_weight = 1000.0;
+    mean_weight = 0.0;
     N_edges = 0;
     while (fgets(line, 30, j_file) != 0)
     {
@@ -114,9 +120,6 @@ void read_J()
         mean_weight += value;
     }
     mean_weight /= N_edges;
-
-    fprintf(cut_file,"%f %f %f ", min_weight, max_weight, mean_weight);
-
     fclose(j_file);
 }
 
@@ -140,7 +143,7 @@ void add_sync_part()
 int find_shift()
 {
     int i = 0, index = -1;
-    printf("value at 0 = %f\n", x_in[0]);
+    //printf("value at 0 = %f\n", x_in[0]);
     while (i < SYNC_BUFFER_SIZE)
     {
         if (x_in[i++] > upper_threshold)
@@ -151,7 +154,7 @@ int find_shift()
     }
     if (index == 0)
     {
-        printf("Shift is towards the left.\n");
+        //printf("Shift is towards the left.\n");
         while (i < SYNC_BUFFER_SIZE)
         {
             if (x_in[i++] < lower_threshold)
@@ -164,7 +167,7 @@ int find_shift()
     }
     else
     {
-        printf("Shift is towards the right.\n");
+        //printf("Shift is towards the right.\n");
         return index;
     }
 }
@@ -339,7 +342,7 @@ void single_iteration(float alpha, float beta, int s, int iteration)
         fprintf(traj_file, "\n");
     }
 
-    printf("Iteration = %d , Shift = %d Attenuation = %f Offset = %f\n", iteration, shift, att, offset);
+    //printf("Iteration = %d , Shift = %d Attenuation = %f Offset = %f\n", iteration, shift, att, offset);
 
     if (sync_write == 1)
     {
@@ -388,15 +391,12 @@ int main(int argc, char **argv)
     char comment[150];
     printf("Enter comment on file: ");
     fgets(comment, sizeof(comment), stdin); // read string
-    printf("cut file name is: %s\n",cut_filename);
     traj_file = fopen(traj_filename, "w");
     sync_file = fopen(sync_filename, "w");
     cut_file = fopen(cut_filename, "w");
 
-    int check = fprintf(cut_file, "#%s\n", comment);
-    printf("Check for comment print is: %d \n",check);
-    check = fprintf(cut_file, "#Instance_name N_spins N_edges Density Min_weight Max_weight Mean_weight Alpha Beta Scaling Offset Sigma Run_number Iteration_number Time_for_iteration Cut\n");
-    printf("Check for header print is: %d \n",check);
+    fprintf(cut_file, "#%s\n", comment);
+    fprintf(cut_file, "#Instance_name N_spins N_edges Density Min_weight Max_weight Mean_weight Alpha Beta Scaling Offset Sigma Run_number Iteration_number Time_for_iteration Cut\n");
  
 
     if (argc > 1)
@@ -560,18 +560,14 @@ int main(int argc, char **argv)
     while ((in_file = readdir(FD)))
     {
 	char instance_name[200] = "/root/Ising_model/poor_man/Maxcut_instances/benchmark_list/";
-	printf("File name: %s\n",in_file->d_name);
 	strcat(instance_name,in_file->d_name);
-	printf("File name: %s\n",in_file->d_name);
         // Remove current and parent directory
         if (!strcmp(in_file->d_name, "."))
             continue;
         if (!strcmp(in_file->d_name, ".."))
             continue;
 	
-        //j_file = fopen(in_file->d_name, "r");
 	j_file = fopen(instance_name, "r");
-        //printf("Using file:%s\n", in_file->d_name);
 	printf("Using file: %s\n", instance_name);
         if (j_file == NULL)
         {
@@ -583,10 +579,9 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        printf("Using file:%s\n", instance_name);
         fgets(line_for_N, 20, j_file);
         sscanf(line_for_N, "%d %d", &N_spins, &N_edges);
-        float edge_density = 2*N_edges/(N_spins*(N_spins-1));
+        float edge_density = (float)2*N_edges/(N_spins*(N_spins-1));
         J = (float **)calloc(N_spins, sizeof(float *));
     	for (int k = 0; k < N_spins; k++)
     	{
@@ -613,15 +608,16 @@ int main(int argc, char **argv)
         printf("Using scale = %f\n", scale);
 
         if(traj_write == 1)
-	    printf("Inside traj write\n");
             fprintf(traj_file, "#%s\n", in_file->d_name);
 
-        fprintf(cut_file, "%s ", in_file->d_name);
-        fprintf(cut_file, "%d %d %f ", N_spins, N_edges, edge_density);
-
         read_J();
-	float cut_store;
-        for (alpha = ALPHA_MIN; alpha <= ALPHA_MAX; alpha += ALPHA_STEP)
+	//fprintf(cut_file, "%s ", in_file->d_name);
+        //fprintf(cut_file, "%d %d %f ", N_spins, N_edges, edge_density);
+
+	edge_density = (float)2*N_edges/(N_spins*(N_spins-1));
+ 	float cut_store;
+        
+	for (alpha = ALPHA_MIN; alpha <= ALPHA_MAX; alpha += ALPHA_STEP)
         {
             for (beta = BETA_MIN; beta <= BETA_MAX; beta += BETA_STEP)
             {
@@ -638,7 +634,8 @@ int main(int argc, char **argv)
                         cut_store = cut_value();
 			fprintf(cut_file, "%s ", in_file->d_name);
 		        fprintf(cut_file, "%d %d %f ", N_spins, N_edges, edge_density);
-                        fprintf(cut_file, "%f %f %f %f %f %d %d ", alpha, beta, scale, offset, sig_f, s, i);
+                        fprintf(cut_file,"%f %f %f ", min_weight, max_weight, mean_weight);
+			fprintf(cut_file, "%f %f %f %f %f %d %d ", alpha, beta, scale, offset, sig_f, s, i);
                         fprintf(cut_file, "%lf ",((double)t)/CLOCKS_PER_SEC);
                         fprintf(cut_file, "%f\n", cut_store);
                     }
@@ -651,9 +648,9 @@ int main(int argc, char **argv)
     }
 
     // Releasing resources
-    free(x_out);
-    free(x_in);
-    free(noise);
+    //free(x_out);
+    //free(x_in);
+    //free(noise);
     rp_Release();
 
     fclose(sync_file);
