@@ -47,6 +47,8 @@ float scale = 1;
 float att = 1; //Lab
 float upper_threshold = 0.11;
 float lower_threshold = 0.07;
+float BIF = 3.7;
+
 
 int sync_write = 0, traj_write = 0;
 
@@ -626,17 +628,21 @@ int main(int argc, char **argv)
 	edge_density = (float)2*N_edges/(N_spins*(N_spins-1));
  	float cut_store;
         float beta_lower;
-	
+    	float d = 1;	
 	for (alpha = ALPHA_MIN; alpha <= ALPHA_MAX; alpha += ALPHA_STEP)
         {
-	    beta_lower = (N_spins/sum_weights)*(3.5-alpha);
+	    beta_lower = (N_spins/sum_weights)*(BIF-alpha);
      	    if(bound_true == 1)
 	    {
    		BETA_MIN = beta_lower;
-		printf("Beta found using bound = %f\n", beta_lower); 
+		//printf("Beta found using bound = %f\n", beta_lower); 
             }
-            for (beta = BETA_MIN; beta <= BETA_MAX; beta += BETA_STEP)
+	   
+            for (d = 1.3; d>=0.04;)
             {
+		
+		beta = (N_spins/(sum_weights*d))*(BIF-alpha);
+		printf("Beta found using bound = %f\n",beta);
                 // Generate new noise for each alpha
                 gen_noise();
 
@@ -659,6 +665,10 @@ int main(int argc, char **argv)
 		    for(i = 0; i<N_spins; i++)
 		    	x_k[i] = 0;
                 }
+		if( d>=0.09 && d<=0.11)
+			d = 0.05;
+		else
+			d-=0.05;
             }
         }
     }
