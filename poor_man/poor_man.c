@@ -8,7 +8,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 
-#include "redpitaya/rp.h"
+#include "rp.h"
 
 #define M_PI 3.14159265358979323846
 #define BUFFER_SIZE 16 * 1024
@@ -204,6 +204,7 @@ static inline void get_xin()
     do
     {
         rp_AcqGetTriggerState(&state);
+	printf("Hello\n");
     } while (state == RP_TRIG_STATE_TRIGGERED);
 
     // Get data from buffer to code
