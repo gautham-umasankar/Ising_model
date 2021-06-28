@@ -638,7 +638,7 @@ int main(int argc, char **argv)
 		//printf("Beta found using bound = %f\n", beta_lower); 
             }
 	   
-            for (d = 1.3; d>=0.04;)
+            for (d = 1.3; d>=1.26;)
             {
 		
 		beta = (N_spins/(sum_weights*d))*(BIF-alpha);
