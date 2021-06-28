@@ -45,8 +45,8 @@ float offset = 0.5;
 float sig_f = 0.04;
 float scale = 1;
 float att = 1; //Lab
-float upper_threshold = 0.11;
-float lower_threshold = 0.07;
+float upper_threshold = 0.5;
+float lower_threshold = -0.5;
 float BIF = 3.7;
 
 
@@ -204,8 +204,8 @@ static inline void get_xin()
     do
     {
         rp_AcqGetTriggerState(&state);
-	printf("Hello\n");
-    } while (state == RP_TRIG_STATE_TRIGGERED);
+	//printf("Waiting for trigger\n");
+    } while (state != RP_TRIG_STATE_TRIGGERED);
 
     // Get data from buffer to code
     rp_AcqGetOldestDataV(RP_CH_1, &buff_size, x_in);
@@ -315,7 +315,7 @@ void single_iteration(float alpha, float beta, int s, int iteration)
         }
 
         // Remove in lab
-        //value = pow(cos(value + (0.25*M_PI)),2); //Modulator function.
+        value = pow(cos(value + (0.25*M_PI)),2); //Modulator function.
         // printf("Value = %f\n", value);
         // value = 0.01*n;
 
@@ -603,7 +603,6 @@ int main(int argc, char **argv)
  
         // fprintf(cut_file, "#%s\n", in_file->d_name);
 
-        //Adjust this later
         buff_per_spin = (int)((BUFFER_SIZE - 2 * SYNC_BUFFER_SIZE) / N_spins);
         printf("N_spins = %d\nN_edges = %d\n", N_spins, N_edges);
         printf("Buff_per_spin = %d\n", buff_per_spin);
@@ -611,7 +610,7 @@ int main(int argc, char **argv)
 
         add_sync_part();
 
-        find_I();
+        // find_I();
 
         if (set_scale != 0)
         {
