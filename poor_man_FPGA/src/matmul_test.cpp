@@ -1,56 +1,55 @@
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 
 #include "matmul.h"
 
 int main(){
-    FILE *fp;
-    dt_mat matrix[N*N];
+	ifstream fp;
+    dt_mat matrix[N][N];
     dt_in in_vector[N];
     dt_out out_vector[N];
+    dt_in inputRead;
 
-    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/mat_file.txt", "r");
-    if(fp == NULL){
-    	cout<<"Couldn't open input matrix file!\n";
-    	return 1;
-    }
+    cout<<"N = "<<N<<"\n";
+    fp.open("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/mat_file_fp.txt",ios::in);
+//    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/mat_file_fp.txt", "r");
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
-            fscanf(fp, "%d", &matrix[i*N+j]);
-            cout<<matrix[i*N+j]<<" ";
+        	fp >> matrix[i][j];
+//			cout<<matrix[i][j]<<" ";
+//			printf("%f ",matrix[i][j].to_float());
         }
-        cout<<"\n";
+//        cout<<"\n";
     }
-    fclose(fp);
+    matrix_mul(matrix ,in_vector , out_vector, 1);
 
-    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/in_vec_file.txt", "r");
-    if(fp == NULL){
-    	cout<<"Couldn't open input vector file!\n";
-    	return 1;
-    }
+    fp.close();
+    fp.open("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/in_vec_file_fp.txt",ios::in);
+//    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/in_vec_file_fp.txt", "r");
+
     for(int i=0;i<N;i++){
-        fscanf(fp, "%d", &in_vector[i]);
-        cout<<in_vector[i]<<"\n";
+    	fp >> inputRead ;
+    	in_vector[i] = inputRead;
+//    	cout<<in_vector[i]<<"\n";
     }
-    fclose(fp);
 
-    matrix_mul(matrix ,in_vector , out_vector);
+    matrix_mul(matrix ,in_vector , out_vector, 0);
 
-    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/out_vec_file.txt", "r");
-    if(fp == NULL){
-    	cout<<"Couldn't open output file!\n";
-    	return 1;
-    }
-    int expected_el, num_errors = 0;
+    fp.close();
+    fp.open("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/out_vec_file_fp.txt",ios::in);
+//    fp = fopen("/media/parsidd/G_drive/College/QCQI/Project_work/Ising_model/poor_man_FPGA/testcases/out_vec_file_fp.txt", "r");
+    int num_errors = 0;
+    dt_out expected_el;
     for(int i=0;i<N;i++){
-        fscanf(fp, "%d", &expected_el);
-        cout<<out_vector[i]<<" vs expected = "<<expected_el<<"\n";
+    	fp >> expected_el;
+//        cout<<out_vector[i]<<" vs expected = "<<expected_el<<"\n";
         if(expected_el != out_vector[i]){
             num_errors++;
         }
     }
-    fclose(fp);
-    
+    fp.close();
+
     if(num_errors == 0){
         printf("Matrix Multiplication passed.\n");
     }
