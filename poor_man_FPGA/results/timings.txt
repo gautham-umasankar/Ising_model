@@ -1,0 +1,7 @@
+#N num_units CPU_time(ms) FPGA_time(ms)
+8	8	0.0065	   0.003
+32	32	0.104      0.003 (quite some variation though)
+32	8	0.104	   0.025
+64	8	0.42	   0.02
+128	8	1.53       0.02
+64	64	0.42       0.02
